@@ -1,0 +1,10 @@
+{
+  "name": "maplive-project",
+  "version": "1.0.0",
+  "description": "실시간 라이브 및 CCTV 지도 플랫폼",
+  "private": true,
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {}
+}

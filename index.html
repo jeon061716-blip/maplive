@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>실시간 라이브 & 추천 장소 영상 Map</title>
+
+<meta name="description" content="지도 위에서 실시간 현장 라이브 스트리밍과 추천 장소를 공유하고 소통하는 오픈 플랫폼 나눔N입니다.">
+<meta property="og:title" content="실시간 라이브 & 추천 장소 영상 Map - 나눔N">
+<meta property="og:description" content="지도 클릭으로 현장을 등록하고 실시간 소통과 제보를 즐겨보세요.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://maplive1.vercel.app/">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Pretendard 폰트 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:20px;
+  background:#f1f5f9;
+  font-family:"Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  color:#0f172a;
+}
+.container{
+  max-width:1440px;
+  margin:auto;
+  background:#ffffff;
+  padding:28px;
+  border-radius:24px;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+}
+.hero-header {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #2563eb;
+  padding: 18px 22px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hero-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hero-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+  color: #0f172a;
+}
+.sub {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  color: #1d4ed8;
+}
+.user-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#map {
+  height: 660px;
+  min-height: 400px;
+  border: 1px solid #cbd5e1;
+  border-radius: 18px;
+  width: 100%;
+  background: #e2e8f0;
+  z-index: 1;
+}
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.status {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-left: auto;
+}
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px;
+  height: 728px;
+}
+.search {
+  display: flex;
+  gap: 8px;
+}
+.search input, .modal input, .modal textarea, .comment-input-box input {
+  flex: 1;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 13px;
+  background: #fff;
+  outline: none;
+  font-family: inherit;
+}
+.search input:focus, .modal input:focus, .modal textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.tab-group {
+  display: flex;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  border: 0;
+  cursor: pointer;
+}
+.tab-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+button:hover { transform: translateY(-2px); }
+.btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+.btn-live { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.btn-req { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
+.btn-gray { background: #64748b; color: #fff; }
+.btn-light { background: #fff; border: 1px solid #cbd5e1; color: #334155; }
+.btn-danger { background: #fff1f2; border: 1px solid #fecdd3; color: #e11d48; }
+
+.cctv-marker {
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  text-align: center;
+  font-weight: bold;
+  line-height: 24px;
+  font-size: 12px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.item-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.item-title { font-weight: 700; font-size: 14px; color: #1e293b; }
+.item-desc { font-size: 13px; color: #475569; line-height: 1.4; }
+.item-time { font-size: 11px; color: #94a3b8; font-weight: 500; }
+.item-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.item-actions button { padding: 7px 10px; font-size: 12px; border-radius: 8px; }
+
+.comments-section { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
+.comments-section.open { display: block; }
+.comment-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; margin-bottom: 10px; }
+.comment-item { background: #f8fafc; padding: 8px 10px; border-radius: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.comment-author { font-weight: 700; color: #2563eb; margin-bottom: 2px; }
+.comment-text { color: #334155; line-height: 1.3; }
+.comment-del { color: #94a3b8; cursor: pointer; font-size: 11px; border: 0; background: transparent; }
+.comment-input-box { display: flex; flex-direction: column; gap: 6px; }
+.comment-input-row { display: flex; gap: 6px; }
+
+.empty { text-align: center; color: #94a3b8; padding: 40px 10px; font-size: 14px; font-weight: 500; line-height: 1.6; }
+
+.footer {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+}
+.footer a { color: #2563eb; text-decoration: underline; font-weight: 600; }
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-card {
+  background: #fff;
+  width: min(580px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 800; margin-bottom: 14px; color: #0f172a; }
+.close { font-size: 26px; color: #94a3b8; cursor: pointer; line-height: 1; }
+label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin: 14px 0 6px; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.video { background: #000; border-radius: 14px; overflow: hidden; aspect-ratio: 16/9; }
+.video iframe { width: 100%; height: 100%; border: 0; }
+.help { font-size: 12px; color: #64748b; line-height: 1.55; margin-top: 8px; }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #ffe4e6; color: #e11d48; margin-left: 4px; font-weight: 800; }
+.badge-purple { background: #f3e8ff; color: #7c3aed; }
+.badge-views { background: #eff6ff; color: #2563eb; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-size: 11px; border: 1px solid #bfdbfe; }
+
+@media(max-width: 900px){
+  body { padding: 10px; }
+  .container { padding: 16px; border-radius: 18px; }
+  .main-layout { grid-template-columns: 1fr; }
+  #map { height: 50vh; min-height: 320px; }
+  .right-panel { height: auto; max-height: 580px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="hero-header">
+    <div class="hero-title-group">
+      <h1>실시간 라이브 & 추천 장소 영상 Map</h1>
+      <div class="sub">지도 클릭으로 현장을 등록하거나 오른쪽 창에서 원하는 장소를 검색해보세요.</div>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <div id="userStatusBox" style="display: none;" class="user-status-badge">
+        <span id="currentUserName">회원</span>님 로그인 중
+      </div>
+      <button class="btn-primary" id="openLoginBtn">로그인</button>
+      <button class="btn-light" id="openSignupModalBtn">회원가입</button>
+      <button class="btn-gray" id="logoutBtn" style="display: none;">로그아웃</button>
+      <button class="btn-req" id="openRequestModalBtn">실시간 영상 요청하기</button>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="left-panel">
+      <div id="map"></div>
+      <div class="toolbar">
+        <button class="btn-light" id="myLocationBtn">내 위치</button>
+        <button class="btn-light" id="clearSearchBtn">검색 결과 지우기</button>
+        <button class="btn-danger" id="clearAllBtn">전체 삭제(관리자)</button>
+        <button class="btn-primary" id="loadCctvBtn">국토부 CCTV 불러오기</button>
+        <span class="status" id="status">서버 연결 중...</span>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="search">
+        <input id="keyword" type="text" placeholder="장소 검색 (예: 연신내, 카페)" autocomplete="off">
+        <button class="btn-primary" id="searchBtn">검색</button>
+      </div>
+
+      <div class="tab-group">
+        <button class="tab-btn active" id="tabPlaces">등록 장소 <span id="count" class="badge">0</span></button>
+        <button class="tab-btn" id="tabRequests">영상 요청 <span id="reqCount" class="badge badge-purple">0</span></button>
+      </div>
+
+      <div class="list-container" id="streamList">
+        <div class="empty">등록된 목록이 없습니다.<br>지도에서 원하는 위치를 클릭해 보세요.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div><b>나눔N (NanumN)</b> | 실시간 위치 기반 정보 공유 플랫폼</div>
+    <div>게시글 및 등록 콘텐츠에 대한 모든 법적 책임은 게시자 본인에게 있습니다.</div>
+    <div>관리자 문의: <a href="mailto:jeon0617@naver.com">jeon061716@naver.com</a></div>
+    <div style="margin-top: 4px; color: #94a3b8;">Copyright ⓒ 2026 나눔N. All rights reserved.</div>
+  </footer>
+</div>
+
+<!-- 로그인/회원가입 공지 및 동의 모달 -->
+<div id="signupModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <span id="signupModalTitle">로그인</span>
+      <span class="close" data-close="signupModal">×</span>
+    </div>
+
+    <div class="tab-group" style="margin-bottom: 14px;">
+      <button class="tab-btn active" id="modalTabLogin">로그인</button>
+      <button class="tab-btn" id="modalTabSignup">회원가입</button>
+    </div>
+
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; font-size: 12px; color: #334155; line-height: 1.6; margin-bottom: 14px;">
+      <h4 style="margin: 0 0 6px; color: #2563eb; font-size: 13px;">[공지] 서비스 이용 규칙 및 안내</h4>
+      <ul style="padding-left: 18px; margin: 0 0 8px;">
+        <li>본 서비스는 로그인한 사용자만 장소 등록, 영상 요청, 댓글 작성이 가능합니다.</li>
+        <li>타인 비방, 허위 사실 유포, 불법 광고 링크 등록 시 이용이 제한될 수 있습니다.</li>
+        <li><b>법적 책임 안내:</b> 등록된 모든 게시글, 링크, 댓글에 대한 민·형사상 책임은 작성자 본인에게 있습니다.</li>
+      </ul>
+    </div>
+
+    <div id="userForm">
+      <label for="userNickname">닉네임</label>
+      <input id="userNickname" type="text" placeholder="사용할 닉네임을 입력하세요">
+
+      <label for="userContact">연락처 (이메일 또는 휴대폰 번호)</label>
+      <input id="userContact" type="text" placeholder="예: jeon0617@naver.com 또는 010-1234-5678">
+
+      <div style="margin-top: 16px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 10px;">
+        <label style="display: flex; align-items: flex-start; gap: 8px; margin: 0; cursor: pointer; font-size: 12px; color: #1e3a8a; font-weight: 600; line-height: 1.4;">
+          <input type="checkbox" id="agreeCheckbox" style="margin-top: 2px; width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer;">
+          <span>(필수) 상기 공지 사항 및 서비스 이용 규칙을 확인하였으며, 정보 수집 및 이용과 게시물 작성에 따른 법적 책임에 동의합니다.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top: 20px;">
+      <button class="btn-gray" data-close="signupModal">취소</button>
+      <button class="btn-primary" id="submitUserBtn">완료 및 시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 영상/링크 등록 모달 -->
+<div id="broadcastModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head"><span>장소 / 현장 웹사이트 등록</span><span class="close" data-close="broadcastModal">×</span></div>
+    <label for="title">장소 / 현장 이름</label>
+    <input id="title" type="text" placeholder="예: 연신내 스타벅스 / 행사장 입구">
+    <label for="url">연결할 웹사이트 / 유튜브 주소</label>
+    <input id="url" type="url" placeholder="https://... (유튜브 주소 또는 웹사이트 URL)">
+    <div class="help">유튜브 링크는 바로 재생되며, 일반 웹사이트는 새 창으로 연결됩니다.</div>
+    <div class="actions">
+      <button class="btn-gray" data-close="broadcastModal">취소</button>
+      <button class="btn-live" id="saveBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 영상 시청 모달 -->
+<div id="viewModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head"><span id="viewTitle">라이브 현장</span><span class="close" data-close="viewModal">×</span></div>
+    <div class="video" id="videoBox"></div>
+    <div class="actions">
+      <button class="btn-light" id="youtubeBtn">외부에서 열기</button>
+      <button class="btn-gray" data-close="viewModal">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 실시간 영상 요청 모달 -->
+<div id="requestModal" class="modal">
+  <div class="modal-card">
+    <div class="modal-head"><span>실시간 현장 영상 요청</span><span class="close" data-close="requestModal">×</span></div>
+    <label for="reqPlace">요청 장소 / 위치</label>
+    <input id="reqPlace" type="text" placeholder="예: 연신내역 3번 출구, 광화문 광장">
+    <label for="reqContent">상세 요청 내용</label>
+    <textarea id="reqContent" rows="3" placeholder="예: 현재 혼잡도나 비가 오는지 현장 영상이 보고 싶어요!"></textarea>
+    <div class="actions">
+      <button class="btn-gray" data-close="requestModal">취소</button>
+      <button class="btn-req" id="saveRequestBtn">요청 등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, updateDoc, increment, addDoc, serverTimestamp, query, orderBy, writeBatch } 
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const ADMIN_PASSWORD = "6057";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBqFZL08RdMxXMe-U7H0U5wynL_1piskS4",
+    authDomain: "maplive-2b8d2.firebaseapp.com",
+    projectId: "maplive-2b8d2",
+    storageBucket: "maplive-2b8d2.firebasestorage.app",
+    messagingSenderId: "60616214671",
+    appId: "1:60616214671:web:974a3d4cc67fd8ad388fa",
+    measurementId: "G-82BG1MQWM4"
+  };
+
+  let db, streamsCol, requestsCol, usersCol;
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    streamsCol = collection(db, "streams");
+    requestsCol = collection(db, "requests");
+    usersCol = collection(db, "users");
+  } catch(e) {
+    console.error("Firebase 초기화 오류:", e);
+  }
+
+  let map;
+  let myLocationMarker = null;
+
+  window.addEventListener("DOMContentLoaded", () => {
+    try {
+      map = L.map("map").setView([37.5665, 126.9780], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "ⓒ OpenStreetMap contributors"
+      }).addTo(map);
+
+      setTimeout(() => { map.invalidateSize(); }, 300);
+
+      map.on("click", e => {
+        if (!isLoggedIn()) {
+          alert("로그인 후 이용 가능합니다.");
+          openLoginModal();
+          return;
+        }
+        const key = keyFor(e.latlng.lat, e.latlng.lng);
+        selectedKey = key;
+        L.popup().setLatLng(e.latlng).setContent(`
+          <div style="font-weight:800;margin-bottom:9px;color:#0f172a;">이 위치에 장소 등록</div>
+          <button class="btn-live" style="width:100%" onclick="startRegister('${key}')">웹사이트 / 링크 등록</button>
+        `).openOn(map);
+      });
+
+    } catch(e) {
+      console.error("지도 로딩 오류:", e);
+    }
+
+    updateAuthUI();
+    if (!isLoggedIn()) {
+      document.getElementById("signupModal").style.display = "flex";
+    }
+
+    if(db) {
+      initFirebaseListeners();
+    } else {
+      document.getElementById("status").textContent = "데이터베이스 연결 실패";
+    }
+  });
+
+  let streams = {};
+  let requests = [];
+  let commentsMap = {};
+  let selectedKey = null;
+  let viewingKey = null;
+  let currentFilter = "";
+  let activeTab = "places";
+  let openCommentSections = {};
+
+  const $ = id => document.getElementById(id);
+  const status = msg => { $("status").textContent = msg || ""; };
+
+  function isLoggedIn() {
+    return localStorage.getItem("isAgreed") === "true" && Boolean(localStorage.getItem("userNickname"));
+  }
+
+  function openLoginModal() {
+    $("modalTabLogin").click();
+    const savedNick = localStorage.getItem("userNickname") || "";
+    const savedContact = localStorage.getItem("userContact") || "";
+    if(savedNick) $("userNickname").value = savedNick;
+    if(savedContact) $("userContact").value = savedContact;
+    $("agreeCheckbox").checked = true;
+    $("signupModal").style.display = "flex";
+  }
+
+  function timeAgo(timestamp) {
+    if (!timestamp) return "방금 전";
+    const now = new Date();
+    const past = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const seconds = Math.floor((now - past) / 1000);
+
+    if (seconds < 60) return "방금 전";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}분 전`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days}일 전`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months}달 전`;
+    return `${Math.floor(months / 12)}년 전`;
+  }
+
+  function updateAuthUI() {
+    const savedNick = localStorage.getItem("userNickname") || "";
+
+    if (isLoggedIn()) {
+      $("userStatusBox").style.display = "inline-flex";
+      $("currentUserName").textContent = savedNick;
+      $("logoutBtn").style.display = "inline-flex";
+      $("openLoginBtn").style.display = "none";
+      $("openSignupModalBtn").textContent = "정보 수정";
+    } else {
+      $("userStatusBox").style.display = "none";
+      $("logoutBtn").style.display = "none";
+      $("openLoginBtn").style.display = "inline-flex";
+      $("openSignupModalBtn").textContent = "회원가입";
+    }
+  }
+
+  $("modalTabLogin").addEventListener("click", () => {
+    $("modalTabLogin").classList.add("active");
+    $("modalTabSignup").classList.remove("active");
+    $("signupModalTitle").textContent = "로그인";
+  });
+
+  $("modalTabSignup").addEventListener("click", () => {
+    $("modalTabSignup").classList.add("active");
+    $("modalTabLogin").classList.remove("active");
+    $("signupModalTitle").textContent = "회원가입";
+  });
+
+  $("openLoginBtn").addEventListener("click", () => {
+    openLoginModal();
+  });
+
+  $("openSignupModalBtn").addEventListener("click", () => {
+    $("modalTabSignup").click();
+    const savedNick = localStorage.getItem("userNickname") || "";
+    const savedContact = localStorage.getItem("userContact") || "";
+    if(savedNick) $("userNickname").value = savedNick;
+    if(savedContact) $("userContact").value = savedContact;
+    $("agreeCheckbox").checked = false;
+    $("signupModal").style.display = "flex";
+  });
+
+  $("logoutBtn").addEventListener("click", () => {
+    if(confirm("로그아웃 하시겠습니까? 저장된 회원 정보가 초기화됩니다.")) {
+      localStorage.removeItem("isAgreed");
+      localStorage.removeItem("userNickname");
+      localStorage.removeItem("userContact");
+      updateAuthUI();
+      renderList();
+      status("로그아웃 되었습니다.");
+      openLoginModal();
+    }
+  });
+
+  $("submitUserBtn").addEventListener("click", async () => {
+    const nickname = $("userNickname").value.trim();
+    const contact = $("userContact").value.trim();
+    const isChecked = $("agreeCheckbox").checked;
+
+    if(!nickname || !contact) {
+      alert("닉네임과 연락처를 모두 입력해주세요.");
+      return;
+    }
+
+    if(!isChecked) {
+      alert("서비스 이용 규칙 및 정보 제공 동의에 체크해주세요.");
+      return;
+    }
+
+    try {
+      status("정보 저장 중...");
+      if(db) {
+        await addDoc(usersCol, { nickname, contact, createdAt: serverTimestamp() });
+      }
+
+      localStorage.setItem("isAgreed", "true");
+      localStorage.setItem("userNickname", nickname);
+      localStorage.setItem("userContact", contact);
+
+      alert(`${nickname}님, 환영합니다!`);
+      closeModal("signupModal");
+      updateAuthUI();
+      status("로그인 완료");
+      renderList();
+    } catch(e) {
+      alert("저장 실패: " + e.message);
+    }
+  });
+
+  function initFirebaseListeners(){
+    onSnapshot(streamsCol, (snapshot) => {
+      Object.values(streams).forEach(s => { if(map && s.marker) map.removeLayer(s.marker); });
+      streams = {};
+
+      snapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const key = docSnapshot.id;
+        addStreamToMap(key, data);
+        subscribeComments("streams", key);
+      });
+
+      renderList();
+      status("실시간 데이터 동기화 완료");
+    }, (error) => {
+      console.error("Firestore Streams Error:", error);
+      status("서버 연결 실패");
+    });
+
+    onSnapshot(requestsCol, (snapshot) => {
+      requests = [];
+      snapshot.forEach((docSnap) => {
+        requests.push({ id: docSnap.id, ...docSnap.data() });
+        subscribeComments("requests", docSnap.id);
+      });
+      renderList();
+    }, (error) => {
+      console.error("Firestore Requests Error:", error);
+    });
+  }
+
+  function subscribeComments(type, docId){
+    const commentKey = `${type}_${docId}`;
+    try {
+      const q = query(collection(db, type, docId, "comments"), orderBy("createdAt", "asc"));
+      onSnapshot(q, (snapshot) => {
+        const list = [];
+        snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
+        commentsMap[commentKey] = list;
+        renderList();
+      }, () => {});
+    } catch(e) {}
+  }
+
+  function keyFor(lat, lng){
+    return Number(lat).toFixed(5) + "_" + Number(lng).toFixed(5);
+  }
+
+  function escapeHtml(s){
+    return String(s || "").replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[c]));
+  }
+
+  function extractVideoId(url){
+    if(!url) return null;
+    let targetUrl = url.trim();
+    if(!/^https?:\/\//i.test(targetUrl)) targetUrl = "https://" + targetUrl;
+    try{
+      const u = new URL(targetUrl);
+      const host = u.hostname.replace(/^www\./,"").toLowerCase();
+      let id = null;
+      if(host === "youtu.be"){
+        id = u.pathname.split("/").filter(Boolean)[0] || null;
+      }else if(host.includes("youtube.com")){
+        if(u.pathname.startsWith("/watch")) id = u.searchParams.get("v");
+        else if(u.pathname.startsWith("/live/")) id = u.pathname.split("/")[2];
+        else if(u.pathname.startsWith("/embed/")) id = u.pathname.split("/")[2];
+        else if(u.pathname.startsWith("/shorts/")) id = u.pathname.split("/")[2];
+      }
+      return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }catch(e){ return null; }
+  }
+
+  async function incrementViews(key){
+    try{
+      if(db) await updateDoc(doc(db, "streams", key), { views: increment(1) });
+    }catch(e){}
+  }
+
+  function addStreamToMap(key, data){
+    if(!map) return;
+    const views = data.views || 0;
+    const marker = L.marker([data.lat, data.lng]).addTo(map);
+    const viewText = views > 0 ? ` (조회수 ${views})` : "";
+    
+    marker.bindTooltip(`${escapeHtml(data.title)}${viewText}`, {
+      permanent: true, direction: "top", offset: [0, -8]
+    });
+
+    marker.on("click", ev => {
+      L.DomEvent.stopPropagation(ev);
+      showStreamPopup(key);
+    });
+
+    streams[key] = {...data, views, marker};
+  }
+
+  function showStreamPopup(key){
+    const s = streams[key];
+    if(!s) return;
+    selectedKey = key;
+    
+    const actionBtn = s.videoId 
+      ? `<button class="btn-primary" onclick="openView('${key}')">지도에서 영상 보기</button>`
+      : `<button class="btn-primary" onclick="openWebLink('${key}')">웹사이트 바로가기</button>`;
+
+    const viewsText = s.views > 0 ? `<div style="font-size:11px;color:#2563eb;font-weight:700;margin-bottom:6px;">누적 조회수 ${s.views}회</div>` : "";
+
+    const buttons = `
+      <div style="font-weight:800;margin-bottom:6px;font-size:14px;color:#0f172a;">${escapeHtml(s.title)}</div>
+      ${viewsText}
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        ${actionBtn}
+        <button class="btn-light" onclick="editStream('${key}')">수정</button>
+        <button class="btn-gray" onclick="deleteStream('${key}')">삭제</button>
+      </div>`;
+    
+    L.popup().setLatLng([s.lat, s.lng]).setContent(buttons).openOn(map);
+  }
+
+  window.openWebLink = function(key){
+    const s = streams[key];
+    if(!s || !s.rawUrl) return;
+    incrementViews(key);
+    let url = s.rawUrl.trim();
+    if(!/^https?:\/\//i.test(url)) url = "https://" + url;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  window.openView = function(key){
+    const s = streams[key];
+    if(!s) return;
+    if(!s.videoId){ openWebLink(key); return; }
+    incrementViews(key);
+    viewingKey = key;
+    $("viewTitle").textContent = s.title;
+    $("videoBox").innerHTML =
+      '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(s.videoId) +
+      '?autoplay=1&playsinline=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    $("viewModal").style.display = "flex";
+    if(map) map.closePopup();
+  };
+
+  window.editStream = function(key){
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const s = streams[key];
+    if(!s) return;
+    selectedKey = key;
+    $("title").value = s.title;
+    $("url").value = s.rawUrl;
+    $("broadcastModal").style.display = "flex";
+    if(map) map.closePopup();
+  };
+
+  window.deleteStream = async function(key){
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const inputPw = prompt("개별 항목을 삭제하려면 관리자 비밀번호를 입력하세요:");
+    if (inputPw === null) return;
+    if (inputPw !== ADMIN_PASSWORD) { alert("비밀번호가 일치하지 않습니다."); return; }
+    try {
+      await deleteDoc(doc(db, "streams", key));
+      if(map) map.closePopup();
+      status("삭제되었습니다.");
+    } catch(e) { alert("삭제 실패: " + e.message); }
+  };
+
+  window.deleteRequest = async function(reqId){
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const inputPw = prompt("요청을 삭제하려면 관리자 비밀번호를 입력하세요:");
+    if (inputPw === null) return;
+    if (inputPw !== ADMIN_PASSWORD) { alert("비밀번호가 일치하지 않습니다."); return; }
+    try {
+      await deleteDoc(doc(db, "requests", reqId));
+      status("요청이 삭제되었습니다.");
+    } catch(e) { alert("삭제 실패: " + e.message); }
+  };
+
+  window.addComment = async function(type, docId){
+    if(!isLoggedIn()){
+      alert("로그인 후 댓글을 작성할 수 있습니다.");
+      openLoginModal();
+      return;
+    }
+    const textEl = $(`text_${type}_${docId}`);
+    const author = localStorage.getItem("userNickname") || "익명";
+    const text = textEl ? textEl.value.trim() : "";
+
+    if(!text){ alert("댓글 내용을 입력해주세요."); return; }
+    try {
+      await addDoc(collection(db, type, docId, "comments"), { author, text, createdAt: serverTimestamp() });
+      textEl.value = "";
+    } catch(e) { alert("댓글 작성 실패: " + e.message); }
+  };
+
+  window.deleteComment = async function(type, docId, commentId){
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const inputPw = prompt("댓글을 삭제하려면 관리자 비밀번호를 입력하세요:");
+    if (inputPw === null) return;
+    if (inputPw !== ADMIN_PASSWORD) { alert("비밀번호가 일치하지 않습니다."); return; }
+    try { await deleteDoc(doc(db, type, docId, "comments", commentId)); } catch(e) { alert("삭제 실패: " + e.message); }
+  };
+
+  window.toggleComments = function(type, docId){
+    const key = `${type}_${docId}`;
+    openCommentSections[key] = !openCommentSections[key];
+    renderList();
+  };
+
+  function closeModal(id){
+    $(id).style.display = "none";
+    if(id === "viewModal") $("videoBox").innerHTML = "";
+  }
+
+  document.querySelectorAll("[data-close]").forEach(btn =>
+    btn.addEventListener("click", () => closeModal(btn.dataset.close))
+  );
+
+  $("openRequestModalBtn").addEventListener("click", () => {
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    $("reqPlace").value = "";
+    $("reqContent").value = "";
+    $("requestModal").style.display = "flex";
+  });
+
+  $("saveRequestBtn").addEventListener("click", async () => {
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const place = $("reqPlace").value.trim();
+    const content = $("reqContent").value.trim();
+    if(!place || !content){ alert("요청 장소와 상세 내용을 모두 입력해주세요."); return; }
+    try {
+      status("요청 등록 중...");
+      await addDoc(requestsCol, { place, content, createdAt: serverTimestamp() });
+      closeModal("requestModal");
+      status("영상 요청이 등록되었습니다!");
+      activeTab = "requests";
+      $("tabPlaces").classList.remove("active");
+      $("tabRequests").classList.add("active");
+      renderList();
+    } catch(e) { alert("요청 저장 실패: " + e.message); }
+  });
+
+  $("saveBtn").addEventListener("click", async () => {
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const title = $("title").value.trim();
+    let rawUrl = $("url").value.trim();
+    if(!title || !rawUrl){ alert("제목과 웹사이트/유튜브 주소를 입력해 주세요."); return; }
+    if(!/^https?:\/\//i.test(rawUrl)) rawUrl = "https://" + rawUrl;
+
+    const videoId = extractVideoId(rawUrl);
+    const parts = selectedKey.split("_");
+    const lat = Number(parts[0]), lng = Number(parts[1]);
+    const existingViews = streams[selectedKey] ? (streams[selectedKey].views || 0) : 0;
+
+    try {
+      status("서버에 저장 중...");
+      await setDoc(doc(db, "streams", selectedKey), {
+        title, rawUrl, videoId: videoId || "", lat, lng, views: existingViews, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      closeModal("broadcastModal");
+      status("성공적으로 저장되었습니다.");
+      if(map) map.setView([lat, lng], Math.max(map.getZoom(), 15));
+    } catch(e) { alert("저장 실패: " + e.message); }
+  });
+
+  window.startRegister = function(key){
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    selectedKey = key;
+    $("title").value = "";
+    $("url").value = "";
+    $("broadcastModal").style.display = "flex";
+    if(map) map.closePopup();
+  };
+
+  $("tabPlaces").addEventListener("click", () => {
+    activeTab = "places";
+    $("tabPlaces").classList.add("active");
+    $("tabRequests").classList.remove("active");
+    renderList();
+  });
+
+  $("tabRequests").addEventListener("click", () => {
+    activeTab = "requests";
+    $("tabRequests").classList.add("active");
+    $("tabPlaces").classList.remove("active");
+    renderList();
+  });
+
+  function renderList(){
+    let keys = Object.keys(streams);
+
+    $("count").textContent = keys.length;
+    $("reqCount").textContent = requests.length;
+
+    if(activeTab === "places"){
+      if(currentFilter){
+        keys = keys.filter(k => streams[k].title.toLowerCase().includes(currentFilter.toLowerCase()));
+      }
+
+      if(!keys.length){
+        const emptyMsg = currentFilter ? `'${escapeHtml(currentFilter)}' 검색 결과가 없습니다.` : '등록된 목록이 없습니다.<br>지도에서 원하는 위치를 클릭해 보세요.';
+        $("streamList").innerHTML = `<div class="empty">${emptyMsg}</div>`;
+        return;
+      }
+
+      keys.sort((a, b) => {
+        const timeA = streams[a].createdAt?.toMillis ? streams[a].createdAt.toMillis() : 0;
+        const timeB = streams[b].createdAt?.toMillis ? streams[b].createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+
+      let html = "";
+      keys.forEach(key => {
+        const s = streams[key];
+        const timeStr = timeAgo(s.createdAt);
+        const viewsCount = s.views || 0;
+        const commentsList = commentsMap[`streams_${key}`] || [];
+        const isCommentOpen = openCommentSections[`streams_${key}`];
+
+        let commentsHtml = "";
+        commentsList.forEach(c => {
+          commentsHtml += `
+            <div class="comment-item">
+              <div>
+                <div class="comment-author">${escapeHtml(c.author)}</div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+              </div>
+              <button class="comment-del" onclick="deleteComment('streams', '${key}', '${c.id}')">삭제</button>
+            </div>`;
+        });
+
+        html += `
+          <div class="item">
+            <div class="item-info">
+              <div class="item-title">${escapeHtml(s.title)}</div>
+              <div class="item-time">${timeStr}</div>
+            </div>
+            ${viewsCount > 0 ? `<div><span class="badge-views">조회수 ${viewsCount}회</span></div>` : ""}
+            <div class="item-actions">
+              ${s.videoId ? `<button class="btn-primary" onclick="openView('${key}')">영상 보기</button>` : `<button class="btn-primary" onclick="openWebLink('${key}')">웹사이트</button>`}
+              <button class="btn-light" onclick="editStream('${key}')">수정</button>
+              <button class="btn-danger" onclick="deleteStream('${key}')">삭제</button>
+              <button class="btn-light" onclick="toggleComments('streams', '${key}')">댓글 (${commentsList.length})</button>
+            </div>
+            <div class="comments-section ${isCommentOpen ? 'open' : ''}">
+              <div class="comment-list">${commentsHtml || '<div style="color:#94a3b8;font-size:11px;text-align:center;padding:6px;">작성된 댓글이 없습니다.</div>'}</div>
+              <div class="comment-input-box">
+                <div class="comment-input-row">
+                  <input type="text" id="text_streams_${key}" placeholder="댓글을 입력하세요..." autocomplete="off">
+                  <button class="btn-primary" style="padding:6px 12px;font-size:12px;" onclick="addComment('streams', '${key}')">등록</button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      });
+      $("streamList").innerHTML = html;
+
+    } else {
+      if(!requests.length){
+        $("streamList").innerHTML = `<div class="empty">등록된 영상 요청이 없습니다.<br>상단의 '실시간 영상 요청하기'를 눌러보세요.</div>`;
+        return;
+      }
+
+      let html = "";
+      requests.forEach(req => {
+        const timeStr = timeAgo(req.createdAt);
+        const commentsList = commentsMap[`requests_${req.id}`] || [];
+        const isCommentOpen = openCommentSections[`requests_${req.id}`];
+
+        let commentsHtml = "";
+        commentsList.forEach(c => {
+          commentsHtml += `
+            <div class="comment-item">
+              <div>
+                <div class="comment-author">${escapeHtml(c.author)}</div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+              </div>
+              <button class="comment-del" onclick="deleteComment('requests', '${req.id}', '${c.id}')">삭제</button>
+            </div>`;
+        });
+
+        html += `
+          <div class="item" style="border-left: 4px solid #8b5cf6;">
+            <div class="item-info">
+              <div class="item-title" style="color:#7c3aed;">${escapeHtml(req.place)}</div>
+              <div class="item-time">${timeStr}</div>
+            </div>
+            <div class="item-desc">${escapeHtml(req.content)}</div>
+            <div class="item-actions">
+              <button class="btn-danger" onclick="deleteRequest('${req.id}')">삭제</button>
+              <button class="btn-light" onclick="toggleComments('requests', '${req.id}')">댓글 (${commentsList.length})</button>
+            </div>
+            <div class="comments-section ${isCommentOpen ? 'open' : ''}">
+              <div class="comment-list">${commentsHtml || '<div style="color:#94a3b8;font-size:11px;text-align:center;padding:6px;">작성된 댓글이 없습니다.</div>'}</div>
+              <div class="comment-input-box">
+                <div class="comment-input-row">
+                  <input type="text" id="text_requests_${req.id}" placeholder="댓글을 입력하세요..." autocomplete="off">
+                  <button class="btn-primary" style="padding:6px 12px;font-size:12px;" onclick="addComment('requests', '${req.id}')">등록</button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      });
+      $("streamList").innerHTML = html;
+    }
+  }
+
+  $("searchBtn").addEventListener("click", () => {
+    currentFilter = $("keyword").value.trim();
+    renderList();
+  });
+
+  $("keyword").addEventListener("keyup", e => {
+    if(e.key === "Enter") {
+      currentFilter = $("keyword").value.trim();
+      renderList();
+    }
+  });
+
+  $("clearSearchBtn").addEventListener("click", () => {
+    $("keyword").value = "";
+    currentFilter = "";
+    renderList();
+  });
+
+  $("clearAllBtn").addEventListener("click", async () => {
+    if(!isLoggedIn()){
+      alert("로그인 후 이용 가능합니다.");
+      openLoginModal();
+      return;
+    }
+    const inputPw = prompt("모든 데이터를 삭제하려면 관리자 비밀번호를 입력하세요:");
+    if (inputPw === null) return;
+    if (inputPw !== ADMIN_PASSWORD) { alert("비밀번호가 일치하지 않습니다."); return; }
+    if (!confirm("정말 모든 장소 데이터를 삭제하시겠습니까?")) return;
+
+    try {
+      status("전체 삭제 중...");
+      const snap = await getDocs(streamsCol);
+      const batch = writeBatch(db);
+      snap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      status("모든 데이터가 삭제되었습니다.");
+    } catch(e) {
+      alert("전체 삭제 실패: " + e.message);
+    }
+  });
+
+  $("myLocationBtn").addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
+      return;
+    }
+    status("현재 위치를 찾는 중...");
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        map.setView([lat, lng], 16);
+        if (myLocationMarker) map.removeLayer(myLocationMarker);
+        myLocationMarker = L.marker([lat, lng], {
+          icon: L.divIcon({ className: 'my-loc', html: 'P', iconSize: [24, 24] })
+        }).addTo(map).bindTooltip("내 현재 위치", { permanent: true }).openPopup();
+        status("현재 위치로 이동했습니다.");
+      },
+      () => { status("위치 정보를 가져올 수 없습니다."); },
+      { enableHighAccuracy: true }
+    );
+  });
+
+  async function fetchItsCctvData() {
+    const bounds = map.getBounds();
+    const minX = bounds.getWest();
+    const maxX = bounds.getEast();
+    const minY = bounds.getSouth();
+    const maxY = bounds.getNorth();
+
+    const apiKey = "38152b3c8b464f699dc6b776329f02b4";
+    const itsUrl = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${apiKey}&type=all&cctvType=1&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}&getType=json`;
+
+    try {
+      status("국토부 CCTV 불러오는 중...");
+      const response = await fetch(itsUrl);
+      
+      if (!response.ok) {
+        throw new Error(`서버 응답 오류 (${response.status})`);
+      }
+
+      const data = await response.json();
+      console.log("국토부 API 응답 데이터:", data);
+
+      let cctvList = [];
+      if (data) {
+        if (data.response && Array.isArray(data.response.data)) {
+          cctvList = data.response.data;
+        } else if (data.response && Array.isArray(data.response.result)) {
+          cctvList = data.response.result;
+        } else if (Array.isArray(data.data)) {
+          cctvList = data.data;
+        } else if (Array.isArray(data)) {
+          cctvList = data;
+        }
+      }
+
+      if (cctvList.length > 0) {
+        let count = 0;
+        cctvList.forEach(cctv => {
+          const lat = cctv.coordY || cctv.y || cctv.latitude;
+          const lng = cctv.coordX || cctv.x || cctv.longitude;
+          const title = cctv.cctvName || cctv.name || "국토부 CCTV";
+          const videoUrl = cctv.cctvUrl || cctv.url || "#";
+
+          if (lat && lng) {
+            L.marker([lat, lng], {
+              icon: L.divIcon({ className: 'cctv-marker', html: 'C', iconSize: [24, 24] })
+            }).addTo(map).bindPopup(`
+              <div style="font-weight:800;margin-bottom:6px;">${escapeHtml(title)}</div>
+              <a href="${videoUrl}" target="_blank" class="btn-primary" style="display:inline-block;padding:6px 10px;color:#fff;text-decoration:none;border-radius:6px;font-size:12px;">실시간 CCTV 보기</a>
+            `);
+            count++;
+          }
+        });
+        status(`국토부 CCTV ${count}개 연동 완료!`);
+      } else {
+        status("현재 화면 영역에 조회된 CCTV가 없습니다.");
+      }
+    } catch (error) {
+      console.error("국토부 ITS API 호출 오류:", error);
+      status("CCTV 불러오기 실패 (CORS 또는 네트워크 확인)");
+    }
+  }
+
+  $("loadCctvBtn").addEventListener("click", () => {
+    fetchItsCctvData();
+  });
+</script>
+</body>
+</html>
