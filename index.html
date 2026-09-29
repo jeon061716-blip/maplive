@@ -42,7 +42,6 @@ button:hover { transform: translateY(-2px); }
 .btn-gray { background: #64748b; color: #fff; }
 .btn-light { background: #fff; border: 1px solid #cbd5e1; color: #334155; }
 .btn-danger { background: #fff1f2; border: 1px solid #fecdd3; color: #e11d48; }
-.cctv-marker { background: #ef4444; color: white; border-radius: 50%; text-align: center; font-weight: bold; line-height: 24px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 .list-container { flex: 1; overflow-y: auto; padding-right: 4px; }
 .item { display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 12px; }
 .item-info { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -56,8 +55,6 @@ button:hover { transform: translateY(-2px); }
 .close { font-size: 26px; color: #94a3b8; cursor: pointer; line-height: 1; }
 label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin: 14px 0 6px; }
 .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
-.video { background: #000; border-radius: 14px; overflow: hidden; aspect-ratio: 16/9; }
-.video iframe { width: 100%; height: 100%; border: 0; }
 .help { font-size: 12px; color: #64748b; line-height: 1.55; margin-top: 8px; }
 .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #ffe4e6; color: #e11d48; margin-left: 4px; font-weight: 800; }
 .badge-purple { background: #f3e8ff; color: #7c3aed; }
@@ -89,7 +86,6 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
         <button class="btn-light" id="myLocationBtn">내 위치</button>
         <button class="btn-light" id="clearSearchBtn">검색 결과 지우기</button>
         <button class="btn-danger" id="clearAllBtn">전체 삭제(관리자)</button>
-        <button class="btn-primary" id="loadCctvBtn">국토부 CCTV 불러오기</button>
         <span class="status" id="status">서버 연결 중...</span>
       </div>
     </div>
@@ -215,10 +211,9 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
   }
 
   let map;
-  let cctvMarkers = [];
 
-  // 🗺️ 기존 데이터를 건드리지 않고 안전하게 채워넣을 샘플 데이터셋 (세이프 머지 방식)
-  const SAFE_SAMPLE_STREAMS = {
+  // 🗺️ 추가할 풍성한 샘플 데이터셋 (기존 데이터와 충돌 없이 안전하게 병합됩니다)
+  const EXTRA_SAMPLES = {
     "37.56650_126.97800": {
       title: "서울시청 & 서울광장 라이브",
       rawUrl: "https://www.youtube.com/watch?v=1Xgp-9lv-Pk",
@@ -294,14 +289,12 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
     }
 
     if(db) {
-      // 🛡️ 기존 데이터는 보존하고 부족한 샘플만 안전하게 병합 주입합니다!
-      await mergeSafeSamples();
+      await injectExtraSamples();
       initFirebaseListeners();
     } else {
       document.getElementById("status").textContent = "데이터베이스 연결 실패";
     }
 
-    initCctvButton();
     initSearchAndTabs();
   });
 
@@ -344,21 +337,18 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
     }
   }
 
-  // 🛡️ 기존 데이터 보존형 샘플 병합 함수
-  async function mergeSafeSamples() {
+  async function injectExtraSamples() {
     try {
-      status("데이터 동기화 및 샘플 병합 중...");
-      for (const [key, data] of Object.entries(SAFE_SAMPLE_STREAMS)) {
-        // 기존에 해당 키(좌표)의 데이터가 없을 때만 안전하게 추가합니다 (기존 데이터 덮어쓰기 방지)
-        // 만약 강제로 샘플을 모두 채우고 싶다면 set(..., {merge: true}) 활용 가능
+      status("샘플 데이터 추가 반영 중...");
+      for (const [key, data] of Object.entries(EXTRA_SAMPLES)) {
         await setDoc(doc(db, "streams", key), {
           ...data,
           createdAt: serverTimestamp()
         }, { merge: true });
       }
-      status("안전 동기화 완료!");
+      status("샘플 추가 완료!");
     } catch(e) {
-      console.error("샘플 병합 오류:", e);
+      console.error("샘플 추가 오류:", e);
     }
   }
 
@@ -520,76 +510,6 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
 
   function closeModal(id){ $(id).style.display = "none"; }
   document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
-
-  function initCctvButton() {
-    $("loadCctvBtn").addEventListener("click", async () => {
-      if (!map) return;
-      const bounds = map.getBounds();
-      const minX = bounds.getWest();
-      const maxX = bounds.getEast();
-      const minY = bounds.getSouth();
-      const maxY = bounds.getNorth();
-
-      status("국토부 CCTV 불러오는 중...");
-      const apiKey = "38152b3c8b464f699dc6b776329f02b4";
-      
-      const urlEx = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${apiKey}&type=ex&cctvType=1&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}&getType=json`;
-      const urlIts = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${apiKey}&type=its&cctvType=1&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}&getType=json`;
-
-      try {
-        const [resEx, resIts] = await Promise.all([
-          fetch(urlEx).then(r => r.json()).catch(() => null),
-          fetch(urlIts).then(r => r.json()).catch(() => null)
-        ]);
-
-        cctvMarkers.forEach(marker => map.removeLayer(marker));
-        cctvMarkers = [];
-
-        let allItems = [];
-        [resEx, resIts].forEach(data => {
-          if (!data) return;
-          let items = [];
-          if (Array.isArray(data.data)) items = data.data;
-          else if (data.response && data.response.body) {
-            const body = data.response.body;
-            items = Array.isArray(body.items) ? body.items : (body.items?.item || []);
-          } else if (data.body) {
-            items = Array.isArray(data.body.items) ? data.body.items : (data.body.items?.item || []);
-          }
-          if (Array.isArray(items)) allItems = allItems.concat(items);
-        });
-
-        if (allItems.length === 0) {
-          status("현재 화면 영역에 조회된 CCTV가 없습니다.");
-          return;
-        }
-
-        allItems.forEach(cctv => {
-          const lat = parseFloat(cctv.coordy || cctv.coordY || cctv.y);
-          const lng = parseFloat(cctv.coordx || cctv.coordX || cctv.x);
-          const name = cctv.cctvname || cctv.cctvName || "CCTV";
-          const videoUrl = cctv.cctvurl || cctv.cctvUrl;
-
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const marker = L.marker([lat, lng], {
-              icon: L.divIcon({ className: 'cctv-marker', html: '🎥', iconSize: [24, 24] })
-            }).addTo(map);
-
-            marker.bindPopup(`
-              <div style="font-weight:800; margin-bottom:6px;">${escapeHtml(name)}</div>
-              ${videoUrl ? `<a href="${videoUrl}" target="_blank" class="btn-primary" style="padding:4px 8px; font-size:11px; text-decoration:none; display:inline-block; color:#fff;">CCTV 영상 보기</a>` : '영상 링크 없음'}
-            `);
-            cctvMarkers.push(marker);
-          }
-        });
-
-        status(`국토부 CCTV ${cctvMarkers.length}개 연동 완료!`);
-      } catch (error) {
-        console.error("CCTV 연동 오류:", error);
-        status("CCTV 데이터 불러오기 실패");
-      }
-    });
-  }
 
   function initSearchAndTabs() {
     $("tabPlaces").addEventListener("click", () => {
