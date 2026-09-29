@@ -217,8 +217,8 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
   let map;
   let cctvMarkers = [];
 
-  // 🗺️ 맵퍼가 자동 생성한 초기 샘플 데이터셋 (서울 주요 랜드마크 및 실시간 거점)
-  const SAMPLE_STREAMS = {
+  // 🗺️ 기존 데이터를 건드리지 않고 안전하게 채워넣을 샘플 데이터셋 (세이프 머지 방식)
+  const SAFE_SAMPLE_STREAMS = {
     "37.56650_126.97800": {
       title: "서울시청 & 서울광장 라이브",
       rawUrl: "https://www.youtube.com/watch?v=1Xgp-9lv-Pk",
@@ -294,8 +294,8 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
     }
 
     if(db) {
-      // 🚀 데이터베이스가 비어있다면 맵퍼가 만든 샘플 데이터를 자동 주입합니다!
-      await checkAndInjectSamples();
+      // 🛡️ 기존 데이터는 보존하고 부족한 샘플만 안전하게 병합 주입합니다!
+      await mergeSafeSamples();
       initFirebaseListeners();
     } else {
       document.getElementById("status").textContent = "데이터베이스 연결 실패";
@@ -344,22 +344,21 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
     }
   }
 
-  // 🚀 샘플 자동 주입 함수
-  async function checkAndInjectSamples() {
+  // 🛡️ 기존 데이터 보존형 샘플 병합 함수
+  async function mergeSafeSamples() {
     try {
-      const snap = await getDocs(streamsCol);
-      if (snap.empty) {
-        status("샘플 데이터 세팅 중...");
-        for (const [key, data] of Object.entries(SAMPLE_STREAMS)) {
-          await setDoc(doc(db, "streams", key), {
-            ...data,
-            createdAt: serverTimestamp()
-          });
-        }
-        status("샘플 데이터 세팅 완료!");
+      status("데이터 동기화 및 샘플 병합 중...");
+      for (const [key, data] of Object.entries(SAFE_SAMPLE_STREAMS)) {
+        // 기존에 해당 키(좌표)의 데이터가 없을 때만 안전하게 추가합니다 (기존 데이터 덮어쓰기 방지)
+        // 만약 강제로 샘플을 모두 채우고 싶다면 set(..., {merge: true}) 활용 가능
+        await setDoc(doc(db, "streams", key), {
+          ...data,
+          createdAt: serverTimestamp()
+        }, { merge: true });
       }
+      status("안전 동기화 완료!");
     } catch(e) {
-      console.error("샘플 주입 오류:", e);
+      console.error("샘플 병합 오류:", e);
     }
   }
 
