@@ -413,7 +413,7 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
       if(TOMTOM_KEY){
         const tt = lang => `https://{s}.api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&language=${lang}&tileSize=512`;
         const opts = z => ({ subdomains: "abcd", maxZoom: 19, tileSize: 512, zoomOffset: -1, zIndex: z, attribution: "ⓒ TomTom" });
-        const ttLayers = [L.tileLayer(tt("en-GB"), opts(2))];
+        const ttLayers = [L.tileLayer(tt("en"), opts(2))];
         [[[34.0, 125.0], [38.7, 129.6]], [[33.0, 126.0], [34.2, 127.0]], [[37.1, 130.7], [37.7, 132.0]]]
           .forEach(bd => ttLayers.push(L.tileLayer(tt("ko-KR"), { ...opts(3), bounds: bd })));
         
