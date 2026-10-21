@@ -191,36 +191,6 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
   </div>
 </div>
 
-<!-- 영상 요청 수정 모달 -->
-<div id="editReqModal" class="modal">
-  <div class="modal-card">
-    <div class="modal-head"><span>✏️ 영상 요청 수정</span><span class="close" data-close="editReqModal">×</span></div>
-    <label for="editReqPlace">요청 장소 / 위치</label>
-    <input id="editReqPlace" type="text">
-    <label for="editReqContent">상세 요청 내용</label>
-    <textarea id="editReqContent" rows="3"></textarea>
-    <div class="actions">
-      <button class="btn-gray" data-close="editReqModal">취소</button>
-      <button class="btn-req" id="saveEditReqBtn">저장</button>
-    </div>
-  </div>
-</div>
-
-<!-- 장소 수정 모달 -->
-<div id="editModal" class="modal">
-  <div class="modal-card">
-    <div class="modal-head"><span>✏️ 장소 수정</span><span class="close" data-close="editModal">×</span></div>
-    <label for="editTitle">장소 / 현장 이름</label>
-    <input id="editTitle" type="text">
-    <label for="editUrl">연결할 웹사이트 / 유튜브 주소</label>
-    <input id="editUrl" type="url">
-    <div class="actions">
-      <button class="btn-gray" data-close="editModal">취소</button>
-      <button class="btn-live" id="saveEditBtn">저장</button>
-    </div>
-  </div>
-</div>
-
 <!-- 영상 보기 모달 (페이지 안에서 재생) -->
 <div id="playerModal" class="modal">
   <div class="modal-card">
@@ -261,205 +231,6 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
   }
 
   let map, cluster;
-  let externalMarkers = [];
-
-  const SAFE_SAMPLE_STREAMS = {
-    "37.56650_126.97800": { title: "서울시청 & 서울광장 라이브", rawUrl: "https://www.youtube.com/watch?v=1Xgp-9lv-Pk", videoId: "1Xgp-9lv-Pk", lat: 37.56650, lng: 126.97800, views: 124 },
-    "37.57960_126.97700": { title: "경복궁 광화문 광장 현장", rawUrl: "https://www.youtube.com/watch?v=jfKfPfyJRdk", videoId: "jfKfPfyJRdk", lat: 37.57960, lng: 126.97700, views: 89 },
-    "37.55120_126.98820": { title: "N서울타워 실시간 뷰", rawUrl: "https://www.youtube.com/watch?v=5qap5aO4i9A", videoId: "5qap5aO4i9A", lat: 37.55120, lng: 126.98820, views: 210 },
-    "37.51330_127.10010": { title: "잠실 롯데월드타워 주변", rawUrl: "https://www.youtube.com/watch?v=kJQP7kiw5Fk", videoId: "kJQP7kiw5Fk", lat: 37.51330, lng: 127.10010, views: 156 },
-    "37.61850_126.92130": { title: "은평구 연신내역 메인 거리", rawUrl: "https://maplive1.vercel.app/", lat: 37.61850, lng: 126.92130, views: 75 }
-  };
-
-  const OPEN_DATA_STREAMS = {
-    "37.51770_126.95840": { title: "노들섬 · 서울 한강 라이브", rawUrl: "https://www.youtube.com/watch?v=RyPvgIqIyZQ", videoId: "RyPvgIqIyZQ", lat: 37.51770, lng: 126.95840, views: 0 },
-    "37.51130_126.99620": { title: "반포대교 · 세빛섬 한강 라이브", rawUrl: "https://www.youtube.com/watch?v=-JhoMGoAfFc", videoId: "-JhoMGoAfFc", lat: 37.51130, lng: 126.99620, views: 0 },
-    "37.52840_126.93260": { title: "여의도 한강공원 라이브", rawUrl: "https://www.youtube.com/@seoulcityview/live", lat: 37.52840, lng: 126.93260, views: 0 },
-    "37.55400_126.89900": { title: "마포 · 월드컵대교 한강 라이브", rawUrl: "https://www.youtube.com/watch?v=vk5BHoDxXf0", videoId: "vk5BHoDxXf0", lat: 37.55400, lng: 126.89900, views: 0 },
-    "37.55630_126.92360": { title: "홍대 거리 라이브", rawUrl: "https://www.youtube.com/@hongdaelive/live", lat: 37.55630, lng: 126.92360, views: 0 },
-    "35.15330_129.11870": { title: "부산 광안리 · 광안대교 라이브", rawUrl: "https://www.youtube.com/watch?v=TBOXgW5VV8s", videoId: "TBOXgW5VV8s", lat: 35.15330, lng: 129.11870, views: 0 },
-    "35.15870_129.16040": { title: "부산 해운대 해수욕장 라이브", rawUrl: "https://www.youtube.com/@BusanHaeundaeLive/live", lat: 35.15870, lng: 129.16040, views: 0 },
-    "37.79200_128.91900": { title: "강릉 강문해변 라이브", rawUrl: "https://www.youtube.com/watch?v=n8mJCRXGoXc", videoId: "n8mJCRXGoXc", lat: 37.79200, lng: 128.91900, views: 0 },
-    "33.36400_126.30000": { title: "제주 한림 · 금오름 방향 라이브", rawUrl: "https://www.youtube.com/watch?v=W2gksLrz0Zs", videoId: "W2gksLrz0Zs", lat: 33.36400, lng: 126.30000, views: 0 }
-  };
-
-  // ===== 한국 외 지역 전면 영어 고정 변수 =====
-  const KR_REGIONS = new Set(["서울","경기","인천","강원","대전","세종","충남","충북","광주","전북","전남","대구","울산","경북","경남","부산","제주"]);
-  const CAT_EN = { "명소": "Attraction", "호텔": "Hotel", "식당": "Restaurant", "카페": "Cafe" };
-  const EN_NAME = {"도쿄 스카이트리": "Tokyo Skytree", "센소지": "Senso-ji Temple", "시부야 스크램블 교차로": "Shibuya Crossing", "도쿄타워": "Tokyo Tower", "후시미 이나리 신사": "Fushimi Inari Shrine", "기요미즈데라": "Kiyomizu-dera", "오사카성": "Osaka Castle", "도톤보리": "Dotonbori", "후지산": "Mount Fuji", "히로시마 평화기념공원": "Hiroshima Peace Memorial Park", "나라 도다이지": "Todai-ji Temple", "츄라우미 수족관": "Churaumi Aquarium", "만리장성(팔달령)": "Great Wall (Badaling)", "자금성": "Forbidden City", "상하이 와이탄": "The Bund, Shanghai", "동방명주탑": "Oriental Pearl Tower", "장가계": "Zhangjiajie", "병마용": "Terracotta Army", "빅토리아 피크": "Victoria Peak", "타이베이 101": "Taipei 101", "지우펀": "Jiufen", "가든스 바이 더 베이": "Gardens by the Bay", "센토사": "Sentosa", "쿠알라룸푸르 페트로나스 타워": "Petronas Twin Towers", "왓 아룬": "Wat Arun", "방콕 왕궁": "Grand Palace, Bangkok", "도이수텝": "Doi Suthep", "앙코르와트": "Angkor Wat", "하롱베이": "Ha Long Bay", "호이안 구시가": "Hoi An Ancient Town", "바나힐": "Ba Na Hills", "울루와뚜 사원": "Uluwatu Temple", "보로부두르": "Borobudur", "보라카이 화이트비치": "White Beach, Boracay", "타지마할": "Taj Mahal", "부르즈 칼리파": "Burj Khalifa", "셰이크 자이드 모스크": "Sheikh Zayed Grand Mosque", "예루살렘 서쪽 벽": "Western Wall", "페트라": "Petra", "아야소피아": "Hagia Sophia", "카파도키아": "Cappadocia", "에펠탑": "Eiffel Tower", "루브르 박물관": "Louvre Museum", "몽생미셸": "Mont Saint-Michel", "베르사유 궁전": "Palace of Versailles", "타워 브리지": "Tower Bridge", "빅벤": "Big Ben", "대영박물관": "British Museum", "스톤헨지": "Stonehenge", "콜로세움": "Colosseum", "성 베드로 대성당": "St. Peter's Basilica", "피렌체 두오모": "Florence Cathedral", "피사의 사탑": "Leaning Tower of Pisa", "산마르코 광장": "St Mark's Square", "밀라노 두오모": "Milan Cathedral", "폼페이": "Pompeii", "아말피 해안": "Amalfi Coast", "사그라다 파밀리아": "Sagrada Família", "알함브라 궁전": "Alhambra", "마드리드 왕궁": "Royal Palace of Madrid", "벨렝탑": "Belém Tower", "안네 프랑크의 집": "Anne Frank House", "브란덴부르크 문": "Brandenburg Gate", "마리엔 광장": "Marienplatz", "노이슈반슈타인 성": "Neuschwanstein Castle", "프라하 카를교": "Charles Bridge", "쇤브룬 궁전": "Schönbrunn Palace", "할슈타트": "Hallstatt", "부다페스트 국회의사당": "Hungarian Parliament Building", "융프라우": "Jungfrau", "마터호른": "Matterhorn", "파르테논 신전": "Parthenon", "산토리니 이아": "Oia, Santorini", "두브로브니크 구시가": "Dubrovnik Old Town", "블레드 호수": "Lake Bled", "뉘하운": "Nyhavn", "감라스탄": "Gamla Stan", "오슬로 오페라하우스": "Oslo Opera House", "블루라군": "Blue Lagoon", "붉은 광장": "Red Square", "에르미타주 박물관": "Hermitage Museum", "자유의 여신상": "Statue of Liberty", "타임스퀘어": "Times Square", "센트럴파크": "Central Park", "엠파이어 스테이트 빌딩": "Empire State Building", "금문교": "Golden Gate Bridge", "그랜드 캐니언": "Grand Canyon", "올드 페이스풀": "Old Faithful", "요세미티": "Yosemite National Park", "라스베이거스 스트립": "Las Vegas Strip", "링컨 기념관": "Lincoln Memorial", "와이키키 해변": "Waikiki Beach", "나이아가라 폭포": "Niagara Falls", "레이크 루이스": "Lake Louise", "CN 타워": "CN Tower", "칸쿤": "Cancún", "치첸이트사": "Chichén Itzá", "마추픽추": "Machu Picchu", "코르코바두 예수상": "Christ the Redeemer", "이구아수 폭포": "Iguazu Falls", "오벨리스크": "Obelisco de Buenos Aires", "이스터 섬 모아이": "Easter Island Moai", "우유니 소금사막": "Salar de Uyuni", "시드니 오페라하우스": "Sydney Opera House", "하버 브리지": "Sydney Harbour Bridge", "울루루": "Uluru", "케언즈 그레이트 배리어 리프": "Great Barrier Reef, Cairns", "퀸스타운": "Queenstown", "밀포드 사운드": "Milford Sound", "스카이타워 오클랜드": "Sky Tower, Auckland", "기자 피라미드": "Pyramids of Giza", "세렝게티": "Serengeti", "킬리만자로": "Mount Kilimanjaro", "테이블 마운틴": "Table Mountain", "빅토리아 폭포": "Victoria Falls", "제마엘프나 광장": "Jemaa el-Fnaa", "마리나 베이 샌즈": "Marina Bay Sands", "래플스 호텔": "Raffles Hotel", "버즈 알 아랍": "Burj Al Arab", "아틀란티스 더 팜": "Atlantis The Palm", "플라자 호텔": "The Plaza Hotel", "벨라지오": "Bellagio", "리츠 파리": "Ritz Paris", "사보이 호텔": "The Savoy", "파크 하얏트 도쿄": "Park Hyatt Tokyo", "더 페닌슐라 홍콩": "The Peninsula Hong Kong", "만다린 오리엔탈 방콕": "Mandarin Oriental, Bangkok", "타지마할 팰리스 뭄바이": "Taj Mahal Palace, Mumbai", "페어몬트 밴프 스프링스": "Fairmont Banff Springs", "호텔 다니엘리": "Hotel Danieli", "카츠 델리카트슨": "Katz's Delicatessen", "조스 피자": "Joe's Pizza", "쉐이크쉑 매디슨 스퀘어": "Shake Shack Madison Square Park", "첼시 마켓": "Chelsea Market", "파이크 플레이스 마켓": "Pike Place Market", "샌프란시스코 페리 빌딩 마켓": "Ferry Building Marketplace", "보로 마켓": "Borough Market", "호프브로이하우스": "Hofbräuhaus", "라 보케리아 시장": "La Boqueria Market", "산 미겔 시장": "Mercado de San Miguel", "해리스 바": "Harry's Bar", "토르베할렌 시장": "Torvehallerne", "츠키지 장외시장": "Tsukiji Outer Market", "니시키 시장": "Nishiki Market", "구로몬 시장": "Kuromon Market", "스키야바시 지로": "Sukiyabashi Jiro", "라우파삿": "Lau Pa Sat", "맥스웰 푸드센터": "Maxwell Food Centre", "라안 제이 파이": "Raan Jay Fai", "스린 야시장": "Shilin Night Market", "라오허제 야시장": "Raohe Street Night Market", "벤탄 시장": "Ben Thanh Market", "그랜드 바자르": "Grand Bazaar", "카페 드 플로르": "Café de Flore", "레 되 마고": "Les Deux Magots", "르 프로코프": "Le Procope", "카페 첸트랄": "Café Central", "카페 자허": "Café Sacher", "카페 플로리안": "Caffè Florian", "안티코 카페 그레코": "Antico Caffè Greco", "카페 아 브라질레이라": "A Brasileira", "파스테이스 드 벨렝": "Pastéis de Belém", "카페 토르토니": "Café Tortoni", "카페 뒤 몽드": "Café du Monde", "오리지널 스타벅스(파이크 플레이스)": "Original Starbucks (Pike Place)", "타르틴 베이커리": "Tartine Bakery", "% 아라비카 아라시야마": "% Arabica Arashiyama", "스타벅스 리저브 로스터리 도쿄": "Starbucks Reserve Roastery Tokyo", "야쿤 카야 토스트": "Ya Kun Kaya Toast"};
-  const EN_COUNTRY = {"일본": "Japan", "중국": "China", "홍콩": "Hong Kong", "대만": "Taiwan", "싱가포르": "Singapore", "말레이시아": "Malaysia", "태국": "Thailand", "캄보디아": "Cambodia", "베트남": "Vietnam", "인도네시아": "Indonesia", "필리핀": "Philippines", "인도": "India", "UAE": "UAE", "이스라엘": "Israel", "요르단": "Jordan", "튀르키예": "Türkiye", "프랑스": "France", "영국": "United Kingdom", "이탈리아": "Italy", "스페인": "Spain", "포르투갈": "Portugal", "네덜란드": "Netherlands", "독일": "Germany", "체코": "Czechia", "오스트리아": "Austria", "헝가리": "Hungary", "스위스": "Switzerland", "그리스": "Greece", "크로아티아": "Croatia", "슬로베니아": "Slovenia", "덴마크": "Denmark", "스웨덴": "Sweden", "노르웨이": "Norway", "아이슬란드": "Iceland", "러시아": "Russia", "미국": "USA", "캐나다": "Canada", "멕시코": "Mexico", "페루": "Peru", "브라질": "Brazil", "아르헨티나": "Argentina", "칠레": "Chile", "볼리비아": "Bolivia", "호주": "Australia", "뉴질랜드": "New Zealand", "이집트": "Egypt", "탄자니아": "Tanzania", "남아공": "South Africa", "짐바브웨": "Zimbabwe", "모로코": "Morocco", "마카오": "Macau", "라오스": "Laos", "미얀마": "Myanmar", "스리랑카": "Sri Lanka", "네팔": "Nepal", "부탄": "Bhutan", "카타르": "Qatar", "이란": "Iran", "아일랜드": "Ireland", "벨기에": "Belgium", "폴란드": "Poland", "에스토니아": "Estonia", "핀란드": "Finland", "콜롬비아": "Colombia", "괌": "Guam", "케냐": "Kenya", "나미비아": "Namibia"};
-  const EN_WORLD = {"도쿄 시부야 스크램블 교차로": "Tokyo · Shibuya Crossing", "도쿄 아사쿠사 센소지": "Tokyo · Senso-ji, Asakusa", "오사카 도톤보리": "Osaka · Dotonbori", "교토 거리": "Kyoto Streets", "후지산": "Mount Fuji", "삿포로": "Sapporo", "뉴욕 타임스퀘어": "New York · Times Square", "라스베이거스 스트립": "Las Vegas Strip", "샌프란시스코 금문교": "San Francisco · Golden Gate Bridge", "하와이 와이키키": "Hawaii · Waikiki", "나이아가라 폭포": "Niagara Falls", "런던 타워브리지": "London · Tower Bridge", "파리 에펠탑": "Paris · Eiffel Tower", "베네치아 대운하": "Venice · Grand Canal", "로마 트레비 분수": "Rome · Trevi Fountain", "홍콩 빅토리아 항구": "Hong Kong · Victoria Harbour", "싱가포르 마리나 베이": "Singapore · Marina Bay", "두바이 부르즈 칼리파": "Dubai · Burj Khalifa", "시드니 하버": "Sydney Harbour"};
-
-  const YT_LIVE = "https://www.youtube.com/results?sp=EgJAAQ%253D%253D&search_query=";
-  const WORLD_LIST = [
-    [37.39250,126.65600,"인천 송도 센트럴파크","송도 센트럴파크 라이브캠"],
-    [37.47600,126.59900,"인천 월미도","월미도 라이브캠"],
-    [35.86870,128.59620,"대구 동성로","대구 동성로 라이브캠"],
-    [35.82820,128.61670,"대구 수성못","대구 수성못 라이브캠"],
-    [36.37660,127.38800,"대전 엑스포 · 한빛탑","대전 엑스포 라이브캠"],
-    [35.14870,126.91700,"광주 충장로","광주 충장로 라이브캠"],
-    [35.54500,129.29500,"울산 태화강","울산 태화강 라이브캠"],
-    [35.81480,127.15300,"전주 한옥마을","전주 한옥마을 라이브캠"],
-    [34.72800,127.73500,"여수 돌산대교 밤바다","여수 밤바다 라이브캠"],
-    [35.83470,129.22660,"경주 동궁과 월지","경주 동궁과월지 라이브캠"],
-    [36.06200,129.38300,"포항 영일대","포항 영일대 라이브캠"],
-    [37.28700,127.01900,"수원 화성","수원 화성 라이브캠"],
-    [37.24170,131.86470,"독도","독도 라이브캠"],
-    [35.65950,139.70050,"Shibuya Crossing","Shibuya crossing live cam"],
-    [35.71480,139.79670,"Senso-ji, Asakusa","Asakusa Sensoji live camera"],
-    [34.66870,135.50130,"Dotonbori Osaka","Dotonbori Osaka live camera"],
-    [35.01160,135.76810,"Kyoto Streets","Kyoto live camera"],
-    [35.36060,138.72740,"Mount Fuji","Mt Fuji live camera"],
-    [43.06180,141.35450,"Sapporo","Sapporo live camera"],
-    [40.75800,-73.98550,"New York Times Square","https://www.earthcam.com/usa/newyork/timessquare/"],
-    [36.11470,-115.17280,"Las Vegas Strip","Las Vegas Strip live cam"],
-    [37.81990,-122.47830,"Golden Gate Bridge","Golden Gate Bridge live cam"],
-    [21.27660,-157.82700,"Hawaii Waikiki","Waikiki live cam"],
-    [43.09620,-79.03770,"Niagara Falls","Niagara Falls live cam"],
-    [51.50550,-0.07540,"London Tower Bridge","London Tower Bridge live cam"],
-    [48.85840,2.29450,"Paris Eiffel Tower","Eiffel Tower live cam"],
-    [45.44080,12.31550,"Venice Grand Canal","Venice Grand Canal live cam"],
-    [41.90090,12.48330,"Rome Trevi Fountain","Rome Trevi live cam"],
-    [22.29300,114.16940,"Hong Kong Victoria Harbour","Hong Kong Victoria Harbour live cam"],
-    [1.28380,103.85910,"Singapore Marina Bay","Singapore Marina Bay live cam"],
-    [25.19720,55.27440,"Dubai Burj Khalifa","Dubai Burj Khalifa live cam"],
-    [-33.85680,151.21530,"Sydney Harbour","Sydney Harbour live cam"]
-  ];
-  const WORLD_STREAMS = Object.fromEntries(WORLD_LIST.map(([lat, lng, title, q]) => {
-    const rawUrl = /^https?:/.test(q) ? q : YT_LIVE + encodeURIComponent(q);
-    const key = Number(lat).toFixed(5) + "_" + Number(lng).toFixed(5);
-    const enTitle = EN_WORLD[title], isUrl = /^https?:/.test(q);
-    return [key, { title: (enTitle || title) + (isUrl ? "" : " · Live Cam"), rawUrl, lat, lng, views: 0 }];
-  }));
-
-  const P = (region, rows, cat = "명소") => rows.map(([n, la, ln]) => [cat, n, region, la, ln]);
-  const PLACE_LIST = [
-    ["명소","경복궁","서울",37.5796,126.9770],["명소","창덕궁","서울",37.5794,126.9910],["명소","덕수궁","서울",37.5658,126.9751],
-    ["명소","N서울타워","서울",37.5512,126.9882],["명소","북촌한옥마을","서울",37.5826,126.9830],["명소","인사동","서울",37.5744,126.9850],
-    ["명소","광장시장","서울",37.5701,126.9996],["명소","동대문디자인플라자","서울",37.5665,127.0092],["명소","롯데월드타워","서울",37.5126,127.1026],
-    ["명소","석촌호수","서울",37.5098,127.1037],["명소","여의도 한강공원","서울",37.5284,126.9326],["명소","명동","서울",37.5636,126.9827],
-    ["명소","국립중앙박물관","서울",37.5239,126.9804],["명소","서울숲","서울",37.5444,127.0374],["명소","홍대 거리","서울",37.5563,126.9236],
-    ["명소","성수동 카페거리","서울",37.5446,127.0560],["명소","서울로7017","서울",37.5560,126.9726],
-    ["호텔","롯데호텔 서울","서울",37.5655,126.9810],["호텔","신라호텔","서울",37.5559,127.0055],["호텔","웨스틴 조선 서울","서울",37.5646,126.9797],
-    ["호텔","그랜드 하얏트 서울","서울",37.5397,126.9982],["호텔","파크 하얏트 서울","서울",37.5082,127.0640],["호텔","포시즌스 호텔 서울","서울",37.5713,126.9785],
-    ["명소","수원화성","경기",37.2870,127.0150],["명소","에버랜드","경기",37.2940,127.2020],["명소","한국민속촌","경기",37.2590,127.1180],
-    ["명소","남한산성","경기",37.4790,127.1830],["명소","두물머리","경기",37.5440,127.3230],["명소","파주 임진각","경기",37.8890,126.7430],
-    ["명소","아침고요수목원","경기",37.7440,127.3510],["명소","쁘띠프랑스","경기",37.7140,127.4200],["명소","광명동굴","경기",37.4265,126.8684],
-    ["명소","송도 센트럴파크","인천",37.3925,126.6560],["명소","월미도","인천",37.4760,126.5990],["명소","인천 차이나타운","인천",37.4750,126.6180],
-    ["명소","강화 마니산","인천",37.6243,126.4290],["명소","을왕리해수욕장","인천",37.4470,126.3730],
-    ["호텔","파라다이스시티","인천",37.4460,126.4700],["호텔","그랜드 하얏트 인천","인천",37.4460,126.4450],
-    ["명소","설악산","강원",38.1195,128.4656],["명소","속초해수욕장","강원",38.1915,128.6022],["명소","낙산사","강원",38.1250,128.6280],
-    ["명소","경포대","강원",37.8035,128.8960],["명소","오죽헌","강원",37.7790,128.8770],["명소","안목해변","강원",37.7720,128.9480],
-    ["명소","남이섬","강원",37.7900,127.5250],["명소","소양강 스카이워크","강원",37.9000,127.7170],["명소","정동진","강원",37.6900,129.0340],
-    ["명소","대관령양떼목장","강원",37.6950,128.7520],["명소","추암 촛대바위","강원",37.4780,129.1600],["명소","황지연못","강원",37.1760,128.9860],
-    ["호텔","알펜시아 리조트","강원",37.6660,128.6830],["호텔","스카이베이 호텔 경포","강원",37.7990,128.9090],
-    ["명소","해운대해수욕장","부산",35.1587,129.1604],["명소","광안리·광안대교","부산",35.1533,129.1187],["명소","감천문화마을","부산",35.0975,129.0106],
-    ["명소","성산일출봉","제주",33.4584,126.9426],["명소","한라산","제주",33.3617,126.5292],["명소","협재해수욕장","제주",33.3940,126.2399],
-    ...P("일본",[["도쿄 스카이트리",35.7101,139.8107],["센소지",35.7148,139.7967],["시부야 스크램블 교차로",35.6595,139.7005],["도쿄타워",35.6586,139.7454],["후시미 이나리 신사",34.9671,135.7727],["기요미즈데라",34.9949,135.7850],["오사카성",34.6873,135.5262],["도톤보리",34.6687,135.5013],["후지산",35.3606,138.7274]]),
-    ...P("중국",[["만리장성(팔달령)",40.3598,116.0200],["자금성",39.9163,116.3972],["상하이 와이탄",31.2400,121.4900],["동방명주탑",31.2397,121.4998]]),
-    ...P("프랑스",[["에펠탑",48.8584,2.2945],["루브르 박물관",48.8606,2.3376],["몽생미셸",48.6361,-1.5115]]),
-    ...P("영국",[["타워 브리지",51.5055,-0.0754],["빅벤",51.5007,-0.1246],["대영박물관",51.5194,-0.1270]]),
-    ...P("미국",[["자유의 여신상",40.6892,-74.0445],["타임스퀘어",40.7580,-73.9855],["센트럴파크",40.7829,-73.9654],["금문교",37.8199,-122.4783],["그랜드 캐니언",36.0544,-112.1401]])
-  ];
-
-  // Overseas places translated to English completely
-  PLACE_LIST.forEach(p => {
-    if(KR_REGIONS.has(p[2])) return;
-    p[5] = p[1]; p[6] = p[2];
-    p[1] = EN_NAME[p[1]] || p[1];
-    p[2] = EN_COUNTRY[p[2]] || p[2];
-  });
-
-  function initPlaceLayers(){
-    if(!map) return;
-    const KR = new Set(["서울","경기","인천","강원","대전","세종","충남","충북","광주","전북","전남","대구","울산","경북","경남","부산","제주"]);
-    const cfg = { "명소": { icon: "🏛️", color: "#10b981", btn: "togAttr" }, "호텔": { icon: "🏨", color: "#f59e0b", btn: "togHotel" }, "식당": { icon: "🍽️", color: "#ef4444", btn: "togFood" }, "카페": { icon: "☕", color: "#a16207", btn: "togCafe" } };
-    Object.entries(cfg).forEach(([cat, c]) => {
-      const arr = [];
-      PLACE_LIST.forEach((p, i) => {
-        if(p[0] !== cat) return;
-        const [, name, region, lat, lng] = p;
-        const m = L.marker([lat, lng], { icon: L.divIcon({ className: "place-pin", html: `<span style="border-color:${c.color}">${c.icon}</span>`, iconSize: [28, 28] }) });
-        m.bindTooltip(`${escapeHtml(name)} · ${region}`, { direction: "top" });
-        m.bindPopup(`<div style="font-weight:800;margin-bottom:4px;">${escapeHtml(name)}</div>
-          <div style="font-size:12px;color:#64748b;margin-bottom:8px;">${region} · ${KR.has(region) ? cat : CAT_EN[cat]}</div>
-          <button class="btn-live" style="width:100%;margin-bottom:6px;" onclick="videoForPlace(${i})">${KR.has(region) ? "▶ 영상 보기" : "▶ Watch Video"}</button><a style="font-size:11px;color:#64748b;" href="${KR.has(region) ? "https://map.naver.com/p/search/" + encodeURIComponent(name) : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(name + " " + region)}" target="_blank" rel="noopener">${KR.has(region) ? "지도에서 보기" : "View on Map"}</a><button class="btn-light" style="width:100%;margin-top:6px;font-size:11px;" onclick="copyLink()">🔗 ${KR.has(region) ? "링크 복사" : "Copy Link"}</button>`);
-        m.on("popupopen", () => setParam("p", coordKey(lat, lng)));
-        placeMarkers[i] = m;
-        arr.push(m);
-      });
-      cluster.addLayers(arr);
-      let on = true;
-      $(c.btn).addEventListener("click", () => { on = !on; on ? cluster.addLayers(arr) : cluster.removeLayers(arr); $(c.btn).style.opacity = on ? 1 : 0.45; });
-    });
-  }
-
-  window.addEventListener("DOMContentLoaded", async () => {
-    try {
-      map = L.map("map", { maxZoom: 19 }).setView([36.3, 127.8], 3);
-      window.map = map;
-      cluster = (typeof L.markerClusterGroup === "function")
-        ? L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 45, chunkedLoading: true })
-        : Object.assign(L.layerGroup(), {
-            addLayers(arr){ arr.forEach(m => this.addLayer(m)); return this; },
-            removeLayers(arr){ arr.forEach(m => this.removeLayer(m)); return this; }
-          });
-      map.addLayer(cluster);
-
-      // OSM Base Layer
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, zIndex: 1, attribution: "ⓒ OpenStreetMap contributors" }).addTo(map);
-
-      // TomTom Tile Layer (Global English Except South Korea)
-      if(TOMTOM_KEY){
-        const tt = lang => `https://{s}.api.tomtom.com/map/1/tile/basic/main/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&language=${lang}&tileSize=512`;
-        const opts = z => ({ subdomains: "abcd", maxZoom: 19, tileSize: 512, zoomOffset: -1, zIndex: z, attribution: "ⓒ TomTom" });
-        const ttLayers = [L.tileLayer(tt("en"), opts(2))];
-        [[[34.0, 125.0], [38.7, 129.6]], [[33.0, 126.0], [34.2, 127.0]], [[37.1, 130.7], [37.7, 132.0]]]
-          .forEach(bd => ttLayers.push(L.tileLayer(tt("ko-KR"), { ...opts(3), bounds: bd })));
-        
-        ttLayers.forEach(l => l.addTo(map));
-      }
-
-      setTimeout(() => { map.invalidateSize(); }, 300);
-
-      map.on("click", e => {
-        if (!isLoggedIn()) {
-          alert("로그인 후 이용 가능합니다.");
-          openLoginModal();
-          return;
-        }
-        const key = keyFor(e.latlng.lat, e.latlng.lng);
-        selectedKey = key;
-        L.popup().setLatLng(e.latlng).setContent(`
-          <div style="font-weight:800;margin-bottom:9px;color:#0f172a;">이 위치에 장소 등록</div>
-          <button class="btn-live" style="width:100%" onclick="startRegister('${key}', ${e.latlng.lat}, ${e.latlng.lng})">웹사이트 / 링크 등록</button>
-        `).openOn(map);
-      });
-    } catch(e) {
-      console.error("지도 로딩 오류:", e);
-    }
-
-    updateAuthUI();
-    if (!isLoggedIn()) {
-      document.getElementById("signupModal").style.display = "flex";
-    }
-
-    if(db) {
-      loadCache();
-      initFirebaseListeners();
-      mergeSafeSamples();
-    } else {
-      document.getElementById("status").textContent = "데이터베이스 연결 실패";
-    }
-
-    initSearchAndTabs();
-    initPlaceLayers();
-    if(map) map.on("popupclose", () => setParam("p", ""));
-    openFromParam();
-    const q0 = new URLSearchParams(location.search).get("q");
-    if(q0){ $("keyword").value = q0; status(`"${q0}" 검색 중...`); $("searchBtn").click(); }
-  });
-
   let streams = {};
   let requests = [];
   let selectedKey = null;
@@ -499,137 +270,59 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
     }
   }
 
-  async function mergeSafeSamples() {
+  window.addEventListener("DOMContentLoaded", async () => {
     try {
-      const flagRef = doc(db, "meta", "openDataSeedV4");
-      if ((await getDoc(flagRef)).exists()) return;
+      map = L.map("map", { maxZoom: 19 }).setView([36.3, 127.8], 3);
+      window.map = map;
+      cluster = L.markerClusterGroup ? L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 45 }) : L.layerGroup();
+      map.addLayer(cluster);
 
-      status("전 세계 오픈 데이터 링크 추가 중...");
-      const all = { ...SAFE_SAMPLE_STREAMS, ...OPEN_DATA_STREAMS, ...WORLD_STREAMS };
-      const entries = Object.entries(all);
-      const snaps = await Promise.all(entries.map(([key]) => getDoc(doc(db, "streams", key))));
-      const todo = entries.filter((_, i) => !snaps[i].exists());
-      for (let i = 0; i < todo.length; i += 400) {
-        const batch = writeBatch(db);
-        todo.slice(i, i + 400).forEach(([key, data]) => batch.set(doc(db, "streams", key), { ...data, createdAt: serverTimestamp() }));
-        await batch.commit();
-      }
-      await setDoc(flagRef, { done: true, at: serverTimestamp() });
-      status("전 세계 링크 추가 완료!");
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, zIndex: 1, attribution: "ⓒ OpenStreetMap contributors" }).addTo(map);
+
+      setTimeout(() => { map.invalidateSize(); }, 300);
+
+      map.on("click", e => {
+        if (!isLoggedIn()) {
+          alert("로그인 후 이용 가능합니다.");
+          openLoginModal();
+          return;
+        }
+        const key = keyFor(e.latlng.lat, e.latlng.lng);
+        selectedKey = key;
+        L.popup().setLatLng(e.latlng).setContent(`
+          <div style="font-weight:800;margin-bottom:9px;color:#0f172a;">이 위치에 장소 등록</div>
+          <button class="btn-live" style="width:100%" onclick="startRegister('${key}', ${e.latlng.lat}, ${e.latlng.lng})">웹사이트 / 링크 등록</button>
+        `).openOn(map);
+      });
     } catch(e) {
-      console.error("샘플 추가 오류:", e);
+      console.error("지도 로딩 오류:", e);
     }
-  }
 
-  $("modalTabLogin").addEventListener("click", () => {
-    $("modalTabLogin").classList.add("active");
-    $("modalTabSignup").classList.remove("active");
-    $("signupModalTitle").textContent = "로그인";
-  });
-
-  $("modalTabSignup").addEventListener("click", () => {
-    $("modalTabSignup").classList.add("active");
-    $("modalTabLogin").classList.remove("active");
-    $("signupModalTitle").textContent = "회원가입";
-  });
-
-  $("openLoginBtn").addEventListener("click", () => { openLoginModal(); });
-
-  $("openSignupModalBtn").addEventListener("click", () => {
-    $("modalTabSignup").click();
-    const savedNick = localStorage.getItem("userNickname") || "";
-    const savedContact = localStorage.getItem("userContact") || "";
-    if(savedNick) $("userNickname").value = savedNick;
-    if(savedContact) $("userContact").value = savedContact;
-    $("agreeCheckbox").checked = false;
-    $("signupModal").style.display = "flex";
-  });
-
-  $("logoutBtn").addEventListener("click", () => {
-    if(confirm("로그아웃 하시겠습니까?")) {
-      localStorage.removeItem("isAgreed");
-      localStorage.removeItem("userNickname");
-      localStorage.removeItem("userContact");
-      updateAuthUI();
-      renderList();
-      status("로그아웃 되었습니다.");
-      openLoginModal();
+    updateAuthUI();
+    if (!isLoggedIn()) {
+      document.getElementById("signupModal").style.display = "flex";
     }
+
+    if(db) {
+      initFirebaseListeners();
+    } else {
+      $("status").textContent = "데이터베이스 연결 실패";
+    }
+
+    initSearchAndTabs();
   });
 
-  $("submitUserBtn").addEventListener("click", async () => {
-    const nickname = $("userNickname").value.trim();
-    const contact = $("userContact").value.trim();
-    const isChecked = $("agreeCheckbox").checked;
-
-    if(!nickname || !contact) { alert("닉네임과 연락처를 모두 입력해주세요."); return; }
-    if(!isChecked) { alert("서비스 이용 규칙 동의에 체크해주세요."); return; }
-
-    try {
-      status("정보 저장 중...");
-      if(db) { await addDoc(usersCol, { nickname, contact, createdAt: serverTimestamp() }); }
-      localStorage.setItem("isAgreed", "true");
-      localStorage.setItem("userNickname", nickname);
-      localStorage.setItem("userContact", contact);
-      alert(`${nickname}님, 환영합니다!`);
-      closeModal("signupModal");
-      updateAuthUI();
-      status("로그인 완료");
-      renderList();
-    } catch(e) { alert("저장 실패: " + e.message); }
-  });
-
-  const STREAM_LIMIT = 500;
-  const CACHE_KEY = "nanumn_streams_v2";
-  let firstSync = true;
-  let cacheTimer;
-  const tms = s => s.createdAt?.toMillis ? s.createdAt.toMillis() : (s.createdAtMs || 0);
-
-  function loadCache(){
-    try {
-      const arr = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
-      arr.forEach(([k, d]) => addStreamToMap(k, d));
-      if(arr.length){ scheduleRender(); status(`저장된 목록 ${arr.length}개 표시 · 서버와 동기화 중...`); }
-    } catch(e) {}
-  }
-
-  function saveCache(){
-    clearTimeout(cacheTimer);
-    cacheTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(Object.entries(streams).slice(0, STREAM_LIMIT).map(([k, s]) => [k, {
-          title: s.title, rawUrl: s.rawUrl, videoId: s.videoId || "", lat: s.lat, lng: s.lng, views: s.views || 0, owner: s.owner || "", createdAtMs: tms(s)
-        }])));
-      } catch(e) {}
-    }, 800);
-  }
-
-  let renderQueued = false;
-  function scheduleRender(){
-    if(renderQueued) return;
-    renderQueued = true;
-    requestAnimationFrame(() => { renderQueued = false; renderList(); });
-  }
+  function keyFor(lat, lng){ return Number(lat).toFixed(5) + "_" + Number(lng).toFixed(5); }
+  function escapeHtml(s){ return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
 
   function initFirebaseListeners(){
-    onSnapshot(query(streamsCol, orderBy("createdAt", "desc"), limit(STREAM_LIMIT)), (snapshot) => {
-      snapshot.docChanges().forEach(ch => {
-        const key = ch.doc.id;
-        const old = streams[key];
-        if (old && old.marker && map) cluster.removeLayer(old.marker);
-        if (ch.type === "removed") { delete streams[key]; return; }
-        addStreamToMap(key, ch.doc.data());
+    onSnapshot(query(streamsCol, orderBy("createdAt", "desc"), limit(200)), (snapshot) => {
+      streams = {};
+      snapshot.forEach(docSnap => {
+        streams[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
       });
-      if(firstSync){
-        firstSync = false;
-        const ids = new Set(snapshot.docs.map(d => d.id));
-        Object.keys(streams).forEach(k => {
-          if(!ids.has(k)){ if(streams[k].marker && map) cluster.removeLayer(streams[k].marker); delete streams[k]; }
-        });
-      }
-      scheduleRender();
-      saveCache();
-      status(`최신 등록 장소 ${snapshot.size}개 동기화 완료`);
+      renderList();
+      status("실시간 데이터 동기화 완료");
     }, (error) => { console.error("Firestore Streams Error:", error); status("서버 연결 실패"); });
 
     onSnapshot(collection(db, "requests"), (snapshot) => {
@@ -641,75 +334,208 @@ label { display: block; font-size: 13px; font-weight: 700; color: #475569; margi
     }, (error) => { console.error("Firestore Requests Error:", error); });
   }
 
-  function keyFor(lat, lng){ return Number(lat).toFixed(5) + "_" + Number(lng).toFixed(5); }
-  function escapeHtml(s){ return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c])); }
+  window.startRegister = function(key, lat, lng){
+    selectedKey = key;
+    window.tempLat = lat;
+    window.tempLng = lng;
+    $("title").value = "";
+    $("url").value = "";
+    $("broadcastModal").style.display = "flex";
+    if(map) map.closePopup();
+  };
 
-  function addStreamToMap(key, data){
-    if(!map) return;
-    const smp = allSamples()[key];
-    if(smp && smp.koTitle) data = { ...data, title: smp.title };
-    const views = data.views || 0;
-    const marker = L.marker([data.lat, data.lng]);
-    cluster.addLayer(marker);
-    const viewText = ` (Views ${views})`;
-    marker.bindTooltip(`${escapeHtml(data.title)}${viewText}`, { direction: "top" });
-    marker.on("click", ev => { L.DomEvent.stopPropagation(ev); showStreamPopup(key); });
-    streams[key] = {...data, views, marker};
-  }
+  $("saveBtn").addEventListener("click", async () => {
+    const title = $("title").value.trim();
+    const rawUrl = $("url").value.trim();
+    if(!title || !rawUrl) { alert("제목과 주소를 모두 입력해주세요."); return; }
 
-  const TOMTOM_KEY = (window.SITE_KEYS && window.SITE_KEYS.TOMTOM) || "";
+    let videoId = "";
+    const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if(ytMatch) videoId = ytMatch[1];
+
+    try {
+      status("저장 중...");
+      await setDoc(doc(db, "streams", selectedKey), {
+        title, rawUrl, videoId,
+        lat: window.tempLat || 37.5665,
+        lng: window.tempLng || 126.9780,
+        views: 0,
+        owner: localStorage.getItem("userNickname") || "",
+        createdAt: serverTimestamp()
+      }, { merge: true });
+      closeModal("broadcastModal");
+      status("등록 완료!");
+    } catch(e) { alert("저장 실패: " + e.message); }
+  });
+
   const YT_API_KEY = (window.SITE_KEYS && window.SITE_KEYS.YT) || "";
 
-  function renderList(){
-    let keys = Object.keys(streams);
-    $("count").textContent = Object.keys(streams).length;
-    $("reqCount").textContent = requests.length;
-
-    if(activeTab === "places"){
-      let html = "";
-      keys.forEach(key => {
-        const s = streams[key];
-        html += `
-          <div class="item" style="cursor:pointer;" onclick="map.setView([${s.lat}, ${s.lng}], 12); showStreamPopup('${key}');">
-            <div class="item-info">
-              <div class="item-title">📍 ${escapeHtml(s.title)}</div>
-              <span style="font-size:11px;color:#2563eb;font-weight:600;">조회수 ${s.views || 0}</span>
-            </div>
-          </div>`;
-      });
-      $("streamList").innerHTML = html;
-    }
+  async function ytSearch(q){
+    const url = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=5&q=" + encodeURIComponent(q) + "&key=" + YT_API_KEY;
+    const res = await fetch(url);
+    const j = await res.json();
+    if(j.error) throw new Error(j.error.message);
+    return (j.items || []).map(it => ({ id: it.id.videoId, title: it.snippet.title, ch: it.snippet.channelTitle }));
   }
 
-  function initSearchAndTabs(){
+  const embed = id => `<div class="video"><iframe src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>`;
+
+  function openPlayer(title, bodyHtml, help){
+    $("playerTitle").textContent = title;
+    $("playerBody").innerHTML = bodyHtml;
+    $("playerHelp").textContent = help || "";
+    const actions = $("playerActions");
+    actions.innerHTML = `<button class="btn-gray" onclick="closeModal('playerModal')">닫기</button>`;
+    $("playerModal").style.display = "flex";
+  }
+
+  window.openWebLink = async function(key){
+    const s = streams[key];
+    if(!s || !s.rawUrl) return;
+    let url = s.rawUrl.trim();
+    if(!/^https?:\/\//i.test(url)) url = "https://" + url;
+    const id = s.videoId || (url.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|live\/|shorts\/|watch\?(?:.*&)?v=))([\w-]{11})/)?.[1] || "");
+    
+    if(id){
+      openPlayer(s.title, embed(id), "");
+      return;
+    }
+
+    if(!YT_API_KEY){
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    openPlayer(s.title, `<div class="empty">영상을 찾는 중...</div>`, "");
+    try {
+      const list = await ytSearch(s.title + " 라이브");
+      if(!list.length){
+        openPlayer(s.title, `<div class="empty">관련 영상을 찾지 못했습니다. 원본 링크로 이동합니다.</div>`, "");
+        setTimeout(() => window.open(url, "_blank"), 1000);
+        return;
+      }
+      window.playVideo = vid => {
+        $("playerBody").innerHTML = embed(vid);
+      };
+      playVideo(list[0].id);
+    } catch(e) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  function closeModal(id){ $(id).style.display = "none"; if(id === "playerModal") $("playerBody").innerHTML = ""; }
+  document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.dataset.close)));
+
+  function initSearchAndTabs() {
+    $("tabPlaces").addEventListener("click", () => {
+      activeTab = "places";
+      $("tabPlaces").classList.add("active");
+      $("tabRequests").classList.remove("active");
+      renderList();
+    });
+
+    $("tabRequests").addEventListener("click", () => {
+      activeTab = "requests";
+      $("tabRequests").classList.add("active");
+      $("tabPlaces").classList.remove("active");
+      renderList();
+    });
+
+    $("openRequestModalBtn").addEventListener("click", () => {
+      if(!isLoggedIn()) { alert("로그인 후 이용 가능합니다."); openLoginModal(); return; }
+      $("reqPlace").value = "";
+      $("reqContent").value = "";
+      $("requestModal").style.display = "flex";
+    });
+
     $("searchBtn").addEventListener("click", () => {
       currentFilter = $("keyword").value.trim();
       renderList();
     });
+
+    $("keyword").addEventListener("keyup", e => {
+      if(e.key === "Enter") $("searchBtn").click();
+    });
+
+    $("clearSearchBtn").addEventListener("click", () => {
+      $("keyword").value = "";
+      currentFilter = "";
+      renderList();
+    });
+
+    $("saveRequestBtn").addEventListener("click", async () => {
+      const place = $("reqPlace").value.trim();
+      const content = $("reqContent").value.trim();
+      if(!place || !content) { alert("장소와 요청 내용을 모두 입력해주세요."); return; }
+      try {
+        await addDoc(requestsCol, {
+          place, content,
+          nickname: localStorage.getItem("userNickname"),
+          replies: [],
+          createdAt: serverTimestamp()
+        });
+        closeModal("requestModal");
+        status("영상 요청이 등록되었습니다.");
+      } catch(e) { alert("등록 실패: " + e.message); }
+    });
   }
 
-  const placeMarkers = [];
-  const allSamples = () => ({ ...SAFE_SAMPLE_STREAMS, ...OPEN_DATA_STREAMS, ...WORLD_STREAMS });
-  const setParam = (k, v) => { try { const u = new URL(location.href); v ? u.searchParams.set(k, v) : u.searchParams.delete(k); history.replaceState(null, "", u); } catch(e) {} };
-  const coordKey = (lat, lng) => Number(lat).toFixed(5) + "_" + Number(lng).toFixed(5);
-  let pendingP = new URLSearchParams(location.search).get("p");
+  const norm = t => String(t || "").toLowerCase().replace(/\s+/g, "");
 
-  function openFromParam(){
-    const p = pendingP;
-    if(!p || !map) return;
-    pendingP = null;
-    if(streams[p]){ map.setView([streams[p].lat, streams[p].lng], 14); showStreamPopup(p); }
-  }
+  function renderList(){
+    let streamKeys = Object.keys(streams);
+    
+    // 최신 등록순 정렬 (Firebase 서버 타임스탬프 기준 내림차순)
+    streamKeys.sort((a, b) => {
+      const timeA = streams[b].createdAt?.toMillis ? streams[b].createdAt.toMillis() : 0;
+      const timeB = streams[a].createdAt?.toMillis ? streams[a].createdAt.toMillis() : 0;
+      return timeB - timeA;
+    });
 
-  function showStreamPopup(key){
-    const s = streams[key];
-    if(!s) return;
-    L.popup().setLatLng([s.lat, s.lng]).setContent(`
-      <div style="font-weight:800;margin-bottom:6px;">${escapeHtml(s.title)}</div>
-      <button class="btn-primary" style="width:100%" onclick="window.open('${s.rawUrl}', '_blank')">▶ Watch Video</button>
-    `).openOn(map);
+    if(currentFilter){
+      streamKeys = streamKeys.filter(k => norm(streams[k].title).includes(norm(currentFilter)));
+    }
+
+    $("count").textContent = Object.keys(streams).length;
+    $("reqCount").textContent = requests.length;
+
+    if(activeTab === "places"){
+      if(!streamKeys.length){
+        $("streamList").innerHTML = `<div class="empty">등록된 목록이 없습니다.<br>지도에서 원하는 위치를 클릭해 보세요.</div>`;
+        return;
+      }
+      let html = "";
+      streamKeys.forEach(key => {
+        const s = streams[key];
+        html += `
+          <div class="item" style="cursor:pointer;" onclick="openWebLink('${key}')">
+            <div class="item-info">
+              <div class="item-title">📍 ${escapeHtml(s.title)}</div>
+              <span style="font-size:11px;color:#2563eb;font-weight:600;">조회수 ${s.views || 0}</span>
+            </div>
+            <button class="btn-primary" style="width:100%;font-size:12px;padding:6px;" onclick="event.stopPropagation(); openWebLink('${key}')">▶ 영상 보기</button>
+          </div>`;
+      });
+      $("streamList").innerHTML = html;
+    } else {
+      if(!requests.length){
+        $("streamList").innerHTML = `<div class="empty">등록된 영상 요청이 없습니다.</div>`;
+        return;
+      }
+      let html = "";
+      requests.forEach(r => {
+        html += `
+          <div class="item">
+            <div class="item-info">
+              <div class="item-title" style="color:#7c3aed;">📌 ${escapeHtml(r.place)}</div>
+              <span style="font-size:11px;color:#64748b;">${escapeHtml(r.nickname || "익명")}</span>
+            </div>
+            <div style="font-size:12px;color:#334155;">${escapeHtml(r.content)}</div>
+          </div>`;
+      });
+      $("streamList").html = html;
+    }
   }
-  window.showStreamPopup = showStreamPopup;
 </script>
 </body>
 </html>
