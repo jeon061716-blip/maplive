@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데일리 마트 - 온라인 장보기 & 주문 관리</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Noto Sans KR Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        mart: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#16a34a',
+                            600: '#15803d',
+                            700: '#166534',
+                            800: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header & Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('shop')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-green-500 flex items-center justify-center text-white shadow-md shadow-emerald-200">
+                        <i class="fa-solid fa-cart-shopping text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-black text-slate-900 tracking-tight">데일리<span class="text-emerald-600">마트</span></span>
+                        <span class="text-[10px] block text-slate-400 font-medium">Daily Fresh Online Mart</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex p-1 bg-slate-100 rounded-xl text-xs sm:text-sm font-semibold">
+                    <button id="tab-shop" onclick="switchTab('shop')" 
+                        class="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 bg-white text-emerald-700 shadow-sm">
+                        <i class="fa-solid fa-store"></i>
+                        <span>마트 장보기</span>
+                    </button>
+                    <button id="tab-lookup" onclick="switchTab('lookup')" 
+                        class="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>내 주문 조회</span>
+                    </button>
+                    <button id="tab-admin" onclick="requestAdminAccess()" 
+                        class="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>주문 관리자</span>
+                        <span id="badge-pending-count" class="px-1.5 py-0.5 text-xs font-bold bg-amber-500 text-white rounded-full hidden">0</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- =================================================== -->
+        <!-- 1. MART SHOPPING VIEW (고객 장보기)                -->
+        <!-- =================================================== -->
+        <div id="view-shop" class="space-y-6">
+            
+            <!-- Payment Explanation Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-start space-x-3">
+                    <div class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl shrink-0 mt-0.5">
+                        <i class="fa-solid fa-circle-question text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base text-emerald-300">웹사이트 결제 및 주문 처리 시스템 안내</h3>
+                        <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">온라인 쇼핑몰 결제 연동(PG사, 가상계좌, 간편결제) 및 시스템 구축 구조를 확인해보세요.</p>
+                    </div>
+                </div>
+                <button onclick="openPaymentGuideModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition shrink-0 shadow-sm flex items-center space-x-1.5">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>결제 연동 방식 보기</span>
+                </button>
+            </div>
+
+            <!-- Search and Category Filters -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
+                <div class="flex space-x-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none" id="category-filters">
+                    <button onclick="filterCategory('all')" class="cat-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition whitespace-nowrap">전체 상품</button>
+                    <button onclick="filterCategory('fresh')" class="cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition whitespace-nowrap">과일 / 야채</button>
+                    <button onclick="filterCategory('meat')" class="cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition whitespace-nowrap">정육 / 수산</button>
+                    <button onclick="filterCategory('instant')" class="cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition whitespace-nowrap">공산품 / 음료</button>
+                    <button onclick="filterCategory('snack')" class="cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition whitespace-nowrap">간식 / 디저트</button>
+                </div>
+
+                <div class="relative w-full md:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-xs text-slate-400"></i>
+                    <input type="text" id="shop-search" oninput="renderShopProducts()" placeholder="상품명 검색..."
+                        class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+            </div>
+
+            <!-- Product Grid & Cart Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Product Grid (2 columns on large screen) -->
+                <div class="lg:col-span-2">
+                    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
+                        <!-- Products rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Shopping Cart & Order Form -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sticky top-20 space-y-5">
+                        
+                        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                                <i class="fa-solid fa-basket-shopping text-emerald-600"></i>
+                                <span>장바구니</span>
+                            </h2>
+                            <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-500 font-medium transition">
+                                <i class="fa-regular fa-trash-can mr-1"></i>비우기
+                            </button>
+                        </div>
+
+                        <!-- Cart Items -->
+                        <div id="cart-items" class="max-h-52 overflow-y-auto space-y-2.5 pr-1 divide-y divide-slate-100">
+                            <!-- Items inserted dynamically -->
+                        </div>
+
+                        <!-- Total Calculation -->
+                        <div class="bg-slate-50 p-3.5 rounded-xl space-y-1.5 border border-slate-100 text-xs">
+                            <div class="flex justify-between text-slate-500">
+                                <span>상품 금액</span>
+                                <span id="cart-subtotal" class="font-medium text-slate-700">0원</span>
+                            </div>
+                            <div class="flex justify-between text-slate-500">
+                                <span>배송/수령 수수료</span>
+                                <span class="font-medium text-emerald-600">0원 (매장 픽업)</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-200">
+                                <span>총 결제금액</span>
+                                <span id="cart-total" class="text-emerald-600">0원</span>
+                            </div>
+                        </div>
+
+                        <!-- Checkout Form -->
+                        <form id="checkout-form" onsubmit="handleCheckoutSubmit(event)" class="space-y-3 pt-1">
+                            <h3 class="text-xs font-bold text-slate-800 border-l-4 border-emerald-500 pl-2">픽업 주문자 정보</h3>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">주문자명 *</label>
+                                    <input type="text" id="cust-name" required placeholder="홍길동"
+                                        class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">휴대폰 번호 *</label>
+                                    <input type="tel" id="cust-phone" required maxlength="11" placeholder="01012345678" oninput="formatPhoneInput(this)"
+                                        class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                    주문 조회용 비밀번호 * 
+                                    <span class="text-[10px] text-emerald-600 font-normal">(4자리 이상)</span>
+                                </label>
+                                <input type="password" id="cust-password" required minlength="4" placeholder="비밀번호 설정"
+                                    class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+
+                            <!-- Pickup Time -->
+                            <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100 space-y-2">
+                                <div class="flex items-center justify-between text-xs font-bold text-emerald-900">
+                                    <span class="flex items-center"><i class="fa-solid fa-store mr-1.5 text-emerald-600"></i>픽업 매장</span>
+                                    <span class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">데일리마트 본점</span>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">픽업 희망 시간 *</label>
+                                    <select id="cust-pickup-time" required class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
+                                        <option value="30분 후 픽업">30분 후 (가장 빠른 픽업)</option>
+                                        <option value="1시간 후 픽업">1시간 후</option>
+                                        <option value="2시간 후 픽업">2시간 후</option>
+                                        <option value="오늘 저녁 (18시~20시)">오늘 저녁 (18시~20시)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">결제 방식 선택 *</label>
+                                <select id="cust-payment-method" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
+                                    <option value="card">신용/체크카드 (온라인 모의 결제)</option>
+                                    <option value="easy">간편결제 (카카오/네이버/토스페이)</option>
+                                    <option value="onsite">매장 현장 결제 (픽업 시 카드/현금)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">매장 요청사항</label>
+                                <input type="text" id="cust-notes" placeholder="예: 신선한 상품으로 부탁드립니다."
+                                    class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+
+                            <button type="submit" id="btn-submit-order" disabled
+                                class="w-full py-3 bg-slate-300 text-white font-bold rounded-xl text-xs transition-all shadow-none cursor-not-allowed">
+                                픽업 주문 제출하기
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- =================================================== -->
+        <!-- 2. ORDER LOOKUP VIEW (고객 주문 조회)               -->
+        <!-- =================================================== -->
+        <div id="view-lookup" class="max-w-2xl mx-auto space-y-6 hidden">
+            
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm text-center space-y-6">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">내 픽업 주문 내역 조회</h2>
+                    <p class="text-xs text-slate-500 mt-1">주문 시 입력하신 [휴대폰 번호]와 [주문 비밀번호]를 입력하세요.</p>
+                </div>
+
+                <form onsubmit="handleLookupOrder(event)" class="space-y-4 text-left max-w-md mx-auto">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">휴대폰 번호 (숫자만)</label>
+                        <input type="tel" id="lookup-phone" required maxlength="11" placeholder="01012345678" oninput="formatPhoneInput(this)"
+                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">주문 비밀번호</label>
+                        <input type="password" id="lookup-password" required placeholder="설정한 비밀번호 입력"
+                            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md">
+                        주문 내역 조회하기
+                    </button>
+                </form>
+
+                <div id="lookup-error-msg" class="hidden p-3 bg-red-50 text-red-600 text-xs rounded-xl font-medium border border-red-100">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                    <span>일치하는 주문 정보가 없거나 비밀번호가 올바르지 않습니다.</span>
+                </div>
+            </div>
+
+            <!-- Lookup Results Container -->
+            <div id="lookup-results-container" class="space-y-4 hidden">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check text-emerald-600"></i>
+                    <span>조회된 주문 내역 (<span id="lookup-count">0</span>건)</span>
+                </h3>
+
+                <div id="lookup-results-list" class="space-y-4">
+                    <!-- Results rendered dynamically -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- =================================================== -->
+        <!-- 3. ADMIN MANAGEMENT VIEW (관리자 처리)              -->
+        <!-- =================================================== -->
+        <div id="view-admin" class="space-y-6 hidden">
+            
+            <!-- Admin Header & Batch Tools Button -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-line text-emerald-600"></i>
+                        <span>마트 주문 & 데이터 관리 시스템</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">실시간 주문 현황 관리 및 상품/주문 일괄 등록 도구</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <button onclick="openBatchModal('product')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center space-x-1.5">
+                        <i class="fa-solid fa-file-import"></i>
+                        <span>상품 일괄 등록</span>
+                    </button>
+                    <button onclick="openBatchModal('order')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center space-x-1.5">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>주문 일괄 등록</span>
+                    </button>
+                    <button onclick="resetToSampleData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center space-x-1" title="기본 샘플 데이터로 복원">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>샘플 복원</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Top Stats -->
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-[11px] font-medium text-slate-400">전체 픽업 주문</p>
+                    <h4 id="admin-stat-total" class="text-xl font-black text-slate-900 mt-1">0</h4>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-[11px] font-medium text-blue-500">신규 접수</p>
+                    <h4 id="admin-stat-received" class="text-xl font-black text-blue-600 mt-1">0</h4>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-[11px] font-medium text-amber-500">상품 선별중</p>
+                    <h4 id="admin-stat-preparing" class="text-xl font-black text-amber-600 mt-1">0</h4>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-[11px] font-medium text-purple-500">픽업 대기</p>
+                    <h4 id="admin-stat-shipping" class="text-xl font-black text-purple-600 mt-1">0</h4>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm col-span-2 lg:col-span-1">
+                    <p class="text-[11px] font-medium text-emerald-600">오늘 총 매출액</p>
+                    <h4 id="admin-stat-revenue" class="text-xl font-black text-emerald-700 mt-1">0원</h4>
+                </div>
+            </div>
+
+            <!-- Admin Filters & Search -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex space-x-1 overflow-x-auto w-full sm:w-auto scrollbar-none">
+                    <button onclick="filterAdminStatus('all')" class="admin-status-btn active px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white transition">전체</button>
+                    <button onclick="filterAdminStatus('접수')" class="admin-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">접수</button>
+                    <button onclick="filterAdminStatus('상품 선별중')" class="admin-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">상품 선별중</button>
+                    <button onclick="filterAdminStatus('픽업 대기')" class="admin-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">픽업 대기</button>
+                    <button onclick="filterAdminStatus('픽업 완료')" class="admin-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">픽업 완료</button>
+                    <button onclick="filterAdminStatus('취소')" class="admin-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">취소</button>
+                </div>
+
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                    <input type="text" id="admin-search" oninput="renderAdminOrders()" placeholder="주문자명, 휴대폰, 상품 검색..."
+                        class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+            </div>
+
+            <!-- Orders Table / List Container -->
+            <div id="admin-orders-container" class="space-y-4">
+                <!-- Orders rendered dynamically -->
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 데일리마트 (Daily Mart). All rights reserved.</p>
+            <p class="mt-1">온라인 장보기 및 픽업 주문 관리 포털</p>
+        </div>
+    </footer>
+
+    <!-- =================================================== -->
+    <!-- MODALS & DIALOGS                                    -->
+    <!-- =================================================== -->
+
+    <!-- Batch Data Import Modal (CSV & JSON Import) -->
+    <div id="batch-import-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-2 text-emerald-600">
+                    <i id="batch-modal-icon" class="fa-solid fa-file-csv text-2xl"></i>
+                    <h3 id="batch-modal-title" class="text-lg font-bold text-slate-900">데이터 일괄 등록 (CSV / JSON)</h3>
+                </div>
+                <button onclick="closeBatchModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Download Template & Input Options -->
+            <div class="space-y-4">
+                <div class="flex flex-wrap items-center justify-between bg-emerald-50 p-3.5 rounded-2xl border border-emerald-100 gap-2 text-xs">
+                    <span class="text-emerald-900 font-medium">
+                        💡 CSV 샘플 템플릿 파일을 다운로드하여 양식에 맞춰 업로드하세요.
+                    </span>
+                    <button onclick="downloadCSVTemplate()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition shadow-sm flex items-center space-x-1">
+                        <i class="fa-solid fa-download"></i>
+                        <span>CSV 양식 다운로드</span>
+                    </button>
+                </div>
+
+                <!-- Mode Tabs: File Upload vs Text Paste -->
+                <div class="flex border-b border-slate-200 text-xs font-bold space-x-4">
+                    <button id="import-tab-file" onclick="switchImportMode('file')" class="pb-2 border-b-2 border-emerald-600 text-emerald-600">CSV 파일 업로드</button>
+                    <button id="import-tab-text" onclick="switchImportMode('text')" class="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-700">CSV / JSON 텍스트 직접 입력</button>
+                </div>
+
+                <!-- Option A: File Upload Container -->
+                <div id="import-container-file" class="space-y-3">
+                    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center bg-slate-50 hover:bg-slate-100/80 transition cursor-pointer" onclick="document.getElementById('batch-file-input').click()">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-emerald-600 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">클릭하여 CSV 파일 선택</p>
+                        <p class="text-[11px] text-slate-400 mt-1">.csv 파일만 지원됩니다 (UTF-8 인코딩 권장)</p>
+                        <input type="file" id="batch-file-input" accept=".csv" onchange="handleCSVFileSelect(event)" class="hidden">
+                    </div>
+                    <div id="file-name-display" class="text-xs text-emerald-600 font-bold hidden flex items-center justify-between bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                        <span id="file-name-text">filename.csv</span>
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+
+                <!-- Option B: Direct Text Paste Container -->
+                <div id="import-container-text" class="space-y-2 hidden">
+                    <label class="block text-xs font-semibold text-slate-600">CSV 헤더 포함 데이터 또는 JSON 배열 텍스트 붙여넣기</label>
+                    <textarea id="batch-text-input" rows="6" placeholder="id,name,category,price,desc,icon&#10;11,신선한 유기농 사과 (1kg),fresh,12000,아삭하고 달콤한 꿀사과,fa-apple-whole"
+                        class="w-full p-3 text-xs border border-slate-200 rounded-xl font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Option: Overwrite or Append -->
+                <div class="flex items-center space-x-4 text-xs font-semibold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span class="text-slate-500">등록 방식:</span>
+                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="radio" name="import-mode" value="append" checked class="text-emerald-600 focus:ring-emerald-500">
+                        <span>기존 데이터에 추가 (Append)</span>
+                    </label>
+                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="radio" name="import-mode" value="overwrite" class="text-emerald-600 focus:ring-emerald-500">
+                        <span class="text-red-600">기존 데이터 덮어쓰기 (Overwrite)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button type="button" onclick="closeBatchModal()" class="w-1/3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition">
+                    취소
+                </button>
+                <button type="button" onclick="executeBatchImport()" class="w-2/3 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>일괄 등록 실행하기</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Authentication Modal -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl text-center">
+            <div class="w-14 h-14 bg-slate-100 text-slate-700 rounded-2xl flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-900">관리자 인증</h3>
+                <p class="text-xs text-slate-500 mt-1">주문 관리자 페이지에 접근하려면 비밀번호를 입력하세요.</p>
+            </div>
+
+            <form onsubmit="handleAdminAuthSubmit(event)" class="space-y-3">
+                <div>
+                    <input type="password" id="admin-auth-input" required placeholder="관리자 비밀번호 입력"
+                        class="w-full px-3 py-2 text-xs text-center border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono">
+                </div>
+                
+                <div id="admin-auth-error" class="hidden text-xs text-red-500 font-semibold">
+                    비밀번호가 올바르지 않습니다.
+                </div>
+
+                <div class="flex space-x-2 pt-1">
+                    <button type="button" onclick="closeAdminAuthModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition">
+                        취소
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md">
+                        확인
+                    </button>
+                </div>
+            </form>
+
+           
+        </div>
+    </div>
+
+    <!-- Payment System Guide Modal -->
+    <div id="payment-guide-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-2 text-emerald-600">
+                    <i class="fa-solid fa-credit-card text-2xl"></i>
+                    <h3 class="text-lg font-bold text-slate-900">웹사이트 결제 시스템 연동 가이드</h3>
+                </div>
+                <button onclick="closePaymentGuideModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <p class="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-100 text-emerald-900 font-medium">
+                    💡 <strong>실제 결제 시스템 연동 가이드</strong>: 웹사이트에서 실제 주문금 결제를 처리하려면 전자결제대행사(PG사)와 연동이 필요합니다.
+                </p>
+
+                <div class="space-y-3">
+                    <div class="border border-slate-200 p-4 rounded-2xl space-y-1.5">
+                        <h4 class="font-bold text-slate-900 text-sm flex items-center text-emerald-700">
+                            <i class="fa-solid fa-plug mr-2"></i>1. PG사 (결제대행사) 이용
+                        </h4>
+                        <p>토스페이먼츠, KG이니시스, NHN KCP 등과 계약 후 연동 SDK를 적용합니다. (포트원/아임포트 등을 이용하면 간편하게 작성 가능)</p>
+                    </div>
+
+                    <div class="border border-slate-200 p-4 rounded-2xl space-y-1.5">
+                        <h4 class="font-bold text-slate-900 text-sm flex items-center text-emerald-700">
+                            <i class="fa-solid fa-mobile-screen mr-2"></i>2. 간편결제 (카카오페이 / 네이버페이 / 토스페이)
+                        </h4>
+                        <p>각 플랫폼 개발자 센터에서 REST API Key를 받아 결제 창 호출 및 서버 간 결제 승인 요청을 진행합니다.</p>
+                    </div>
+
+                    <div class="border border-slate-200 p-4 rounded-2xl space-y-1.5">
+                        <h4 class="font-bold text-slate-900 text-sm flex items-center text-emerald-700">
+                            <i class="fa-solid fa-building-columns mr-2"></i>3. 현장 결제 및 가상 계좌
+                        </h4>
+                        <p>픽업 현장 결제는 주문 생성 후 매장 수령 시 카드/현금으로 수령하며, 가상계좌의 경우 Webhook을 통해 실시간 입금 통보를 받아 처리합니다.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 p-3.5 rounded-xl text-slate-500 text-xs">
+                    * 본 애플리케이션은 결제 모의 시뮬레이션을 내장하여 결제부터 주문 관리자 처리까지 즉시 확인 가능합니다.
+                </div>
+            </div>
+
+            <button onclick="closePaymentGuideModal()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition">
+                확인 및 닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- Payment Simulation Modal -->
+    <div id="payment-sim-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl text-center">
+            <div id="pay-sim-header" class="space-y-2">
+                <!-- Dynamic Pay Header -->
+            </div>
+
+            <div id="pay-sim-body" class="bg-slate-50 p-4 rounded-2xl text-left border border-slate-100 space-y-3 text-xs">
+                <!-- Dynamic Pay Input or Info -->
+            </div>
+
+            <div class="flex space-x-2">
+                <button onclick="cancelPaymentSim()" class="w-1/2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition">
+                    결제 취소
+                </button>
+                <button onclick="confirmPaymentSim()" class="w-1/2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md">
+                    결제 승인하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Completion Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-900">픽업 주문 접수 완료!</h3>
+                <p class="text-xs text-slate-500 mt-1">주문이 성공적으로 전달되었습니다.</p>
+            </div>
+            
+            <div class="bg-slate-50 rounded-2xl p-4 text-left space-y-2 border border-slate-100 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">주문 번호</span>
+                    <span id="modal-order-id" class="font-bold text-slate-800">#0000</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">결제 방식</span>
+                    <span id="modal-order-pay" class="text-slate-700"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">총 결제금액</span>
+                    <span id="modal-order-price" class="font-bold text-emerald-600"></span>
+                </div>
+            </div>
+
+            <p class="text-[11px] text-slate-400 leading-normal">설정하신 비밀번호와 휴대폰 번호로 ['내 주문 조회'] 탭에서 진행 상태를 확인해보세요.</p>
+
+            <button onclick="closeSuccessModal()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-notification" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <div class="text-emerald-400">
+            <i class="fa-solid fa-circle-info text-base"></i>
+        </div>
+        <div id="toast-message" class="text-xs font-medium">
+            알림 메시지입니다.
+        </div>
+    </div>
+
+    <!-- App Logic Script -->
+    <script>
+        // Mock Product Catalog Data
+        let productsData = JSON.parse(localStorage.getItem('daily_mart_products_v3')) || [
+            { id: 1, name: "친환경 샤인머스켓 (1kg)", category: "fresh", price: 15900, icon: "fa-apple-whole", desc: "당도 높은 프리미엄 샤인머스켓" },
+            { id: 2, name: "국산 제주 감귤 (2kg)", category: "fresh", price: 8900, icon: "fa-lemon", desc: "새콤달콤 맛있는 노지 감귤" },
+            { id: 3, name: "유기농 당근 & 파프리카 세트", category: "fresh", price: 4500, icon: "fa-carrot", desc: "신선한 당일 수확 채소" },
+            { id: 4, name: "한우 1등급 등심 (300g)", category: "meat", price: 29800, icon: "fa-drumstick-bite", desc: "마블링이 훌륭한 프리미엄 등심" },
+            { id: 5, name: "생연어 횟감용 (200g)", category: "meat", price: 12500, icon: "fa-fish", desc: "노르웨이산 고소한 생연어" },
+            { id: 6, name: "신라면 멀티팩 (5개입)", category: "instant", price: 4200, icon: "fa-bowl-food", desc: "국민 얼큰한 라면" },
+            { id: 7, name: "코카콜라 Zero (1.5L)", category: "instant", price: 2800, icon: "fa-bottle-water", desc: "부담 없는 제로 칼로리 음료" },
+            { id: 8, name: "크리넥스 3겹 화장지 (30롤)", category: "instant", price: 19900, icon: "fa-box", desc: "부드러운 3겹 천연펄프" },
+            { id: 9, name: "수제 초코 칩 쿠키 세트", category: "snack", price: 5500, icon: "fa-cookie", desc: "진한 초콜릿이 씹히는 수제 쿠키" },
+            { id: 10, name: "프리미엄 딸기 생크림 케이크", category: "snack", price: 24000, icon: "fa-cake-candles", desc: "생딸기가 듬뿍 올려진 베이커리" }
+        ];
+
+        // Sample Pre-populated Orders
+        const defaultOrders = [
+            {
+                id: "M-1002",
+                time: new Date(Date.now() - 20 * 60000).toLocaleString('ko-KR'),
+                customer: { name: "김철수", phone: "01012345678", password: "1234", pickupTime: "30분 후 픽업", notes: "상처 없는 과일로 골라주세요" },
+                items: [
+                    { name: "친환경 샤인머스켓 (1kg)", price: 15900, count: 1 },
+                    { name: "신라면 멀티팩 (5개입)", price: 4200, count: 2 }
+                ],
+                subtotal: 24300,
+                shipping: 0,
+                totalAmount: 24300,
+                paymentMethod: "신용/체크카드",
+                status: "상품 선별중"
+            },
+            {
+                id: "M-1001",
+                time: new Date(Date.now() - 80 * 60000).toLocaleString('ko-KR'),
+                customer: { name: "이영희", phone: "01098765432", password: "pass", pickupTime: "오늘 저녁 (18시~20시)", notes: "퇴근길 픽업 예정" },
+                items: [
+                    { name: "크리넥스 3겹 화장지 (30롤)", price: 19900, count: 1 }
+                ],
+                subtotal: 19900,
+                shipping: 0,
+                totalAmount: 19900,
+                paymentMethod: "매장 현장 결제",
+                status: "픽업 완료"
+            }
+        ];
+
+        // Global Application State
+        let cart = [];
+        let orders = JSON.parse(localStorage.getItem('daily_mart_orders_v3')) || defaultOrders;
+        let currentShopCategory = 'all';
+        let currentAdminFilter = 'all';
+        let isAdminAuthenticated = false;
+        let pendingCheckoutData = null;
+
+        // Batch Import State Variables
+        let currentBatchTarget = 'product'; // 'product' or 'order'
+        let currentImportTab = 'file'; // 'file' or 'text'
+        let loadedCSVContent = '';
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            saveProductsToStorage();
+            saveOrdersToStorage();
+            renderShopProducts();
+            renderCart();
+            updateAdminStats();
+        });
+
+        function saveProductsToStorage() {
+            localStorage.setItem('daily_mart_products_v3', JSON.stringify(productsData));
+        }
+
+        function saveOrdersToStorage() {
+            localStorage.setItem('daily_mart_orders_v3', JSON.stringify(orders));
+        }
+
+        // --- BATCH IMPORT TOOLS LOGIC ---
+
+        function openBatchModal(targetType) {
+            currentBatchTarget = targetType;
+            loadedCSVContent = '';
+            document.getElementById('batch-file-input').value = '';
+            document.getElementById('batch-text-input').value = '';
+            document.getElementById('file-name-display').classList.add('hidden');
+
+            const titleEl = document.getElementById('batch-modal-title');
+            const iconEl = document.getElementById('batch-modal-icon');
+
+            if (targetType === 'product') {
+                titleEl.innerText = "상품 목록 데이터 일괄 등록 (CSV / JSON)";
+                iconEl.className = "fa-solid fa-boxes-packing text-2xl";
+            } else {
+                titleEl.innerText = "주문 내역 데이터 일괄 등록 (CSV / JSON)";
+                iconEl.className = "fa-solid fa-file-invoice text-2xl";
+            }
+
+            switchImportMode('file');
+            document.getElementById('batch-import-modal').classList.remove('hidden');
+        }
+
+        function closeBatchModal() {
+            document.getElementById('batch-import-modal').classList.add('hidden');
+        }
+
+        function switchImportMode(mode) {
+            currentImportTab = mode;
+            const fileTab = document.getElementById('import-tab-file');
+            const textTab = document.getElementById('import-tab-text');
+            const fileContainer = document.getElementById('import-container-file');
+            const textContainer = document.getElementById('import-container-text');
+
+            if (mode === 'file') {
+                fileTab.className = "pb-2 border-b-2 border-emerald-600 text-emerald-600 font-bold";
+                textTab.className = "pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-700 font-bold";
+                fileContainer.classList.remove('hidden');
+                textContainer.classList.add('hidden');
+            } else {
+                textTab.className = "pb-2 border-b-2 border-emerald-600 text-emerald-600 font-bold";
+                fileTab.className = "pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-700 font-bold";
+                textContainer.classList.remove('hidden');
+                fileContainer.classList.add('hidden');
+            }
+        }
+
+        function downloadCSVTemplate() {
+            let csvContent = "";
+            let fileName = "";
+
+            if (currentBatchTarget === 'product') {
+                csvContent = "id,name,category,price,desc,icon\n" +
+                             "101,신선한 유기농 사과 (1kg),fresh,12000,아삭하고 달콤한 꿀사과,fa-apple-whole\n" +
+                             "102,프리미엄 삼겹살 (500g),meat,18500,고소하고 부드러운 한돈,fa-drumstick-bite\n" +
+                             "103,갓 볶은 원두 커피 (200g),instant,9900,풍미 가득한 아라비카,fa-mug-hot";
+                fileName = "mart_products_template.csv";
+            } else {
+                csvContent = "id,customerName,phone,password,pickupTime,notes,itemsSummary,totalAmount,paymentMethod,status\n" +
+                             "M-9001,홍길동,01012345678,1234,30분 후 픽업,빠른 수령 원함,신선한 사과 (1개),12000,신용/체크카드,접수\n" +
+                             "M-9002,김철수,01099998888,0000,1시간 후 픽업,꼼꼼한 포장 부탁,생연어 (2개),25000,간편결제,상품 선별중";
+                fileName = "mart_orders_template.csv";
+            }
+
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleCSVFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('file-name-text').innerText = file.name;
+            document.getElementById('file-name-display').classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                loadedCSVContent = evt.target.result;
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseCSVText(csvText) {
+            const lines = csvText.split(/\r\n|\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) return [];
+
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"(.*)"$/, '$1'));
+            const result = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/^"(.*)"$/, '$1'));
+                if (values.length === headers.length) {
+                    const rowObj = {};
+                    headers.forEach((header, idx) => {
+                        rowObj[header] = values[idx];
+                    });
+                    result.push(rowObj);
+                }
+            }
+            return result;
+        }
+
+        function executeBatchImport() {
+            let rawData = "";
+
+            if (currentImportTab === 'file') {
+                rawData = loadedCSVContent;
+                if (!rawData) {
+                    alert('CSV 파일을 업로드해주거나 선택해주세요.');
+                    return;
+                }
+            } else {
+                rawData = document.getElementById('batch-text-input').value.trim();
+                if (!rawData) {
+                    alert('일괄 등록할 CSV 또는 JSON 텍스트를 입력해주세요.');
+                    return;
+                }
+            }
+
+            const isOverwrite = document.querySelector('input[name="import-mode"]:checked').value === 'overwrite';
+            let parsedItems = [];
+
+            // Try parsing JSON first; if fail, parse as CSV
+            try {
+                if (rawData.trim().startsWith('[') || rawData.trim().startsWith('{')) {
+                    const jsonParsed = JSON.parse(rawData);
+                    parsedItems = Array.isArray(jsonParsed) ? jsonParsed : [jsonParsed];
+                } else {
+                    parsedItems = parseCSVText(rawData);
+                }
+            } catch (err) {
+                parsedItems = parseCSVText(rawData);
+            }
+
+            if (parsedItems.length === 0) {
+                alert('데이터 형식이 올바르지 않거나 유효한 데이터가 없습니다.');
+                return;
+            }
+
+            if (currentBatchTarget === 'product') {
+                const formattedProducts = parsedItems.map((item, idx) => ({
+                    id: Number(item.id) || (Date.now() + idx),
+                    name: item.name || "신규 등록 상품",
+                    category: item.category || "fresh",
+                    price: Number(item.price) || 1000,
+                    icon: item.icon || "fa-box",
+                    desc: item.desc || "일괄 등록된 상품 설명"
+                }));
+
+                if (isOverwrite) {
+                    productsData = formattedProducts;
+                } else {
+                    productsData = [...productsData, ...formattedProducts];
+                }
+
+                saveProductsToStorage();
+                renderShopProducts();
+                showToast(`${formattedProducts.length}건의 상품 데이터가 일괄 등록되었습니다.`);
+            } else {
+                const formattedOrders = parsedItems.map((item, idx) => ({
+                    id: item.id || ('M-' + (2000 + idx)),
+                    time: item.time || new Date().toLocaleString('ko-KR'),
+                    customer: {
+                        name: item.customerName || item.name || "익명",
+                        phone: (item.phone || "01000000000").replace(/[^0-9]/g, ''),
+                        password: item.password || "1234",
+                        pickupTime: item.pickupTime || "30분 후 픽업",
+                        notes: item.notes || "일괄 등록 주문"
+                    },
+                    items: [
+                        { name: item.itemsSummary || "일괄 등록 수령 상품", price: Number(item.totalAmount) || 10000, count: 1 }
+                    ],
+                    subtotal: Number(item.totalAmount) || 10000,
+                    shipping: 0,
+                    totalAmount: Number(item.totalAmount) || 10000,
+                    paymentMethod: item.paymentMethod || "신용/체크카드",
+                    status: item.status || "접수"
+                }));
+
+                if (isOverwrite) {
+                    orders = formattedOrders;
+                } else {
+                    orders = [...orders, ...formattedOrders];
+                }
+
+                saveOrdersToStorage();
+                renderAdminOrders();
+                updateAdminStats();
+                showToast(`${formattedOrders.length}건의 주문 데이터가 일괄 등록되었습니다.`);
+            }
+
+            closeBatchModal();
+        }
+
+        function resetToSampleData() {
+            if (confirm('모든 데이터를 초기 기본 샘플 데이터로 복원하시겠습니까?')) {
+                localStorage.removeItem('daily_mart_products_v3');
+                localStorage.removeItem('daily_mart_orders_v3');
+                location.reload();
+            }
+        }
+
+        // Digits-only Phone Input Masking
+        function formatPhoneInput(input) {
+            input.value = input.value.replace(/[^0-9]/g, '');
+        }
+
+        // Navigation Tab Switching
+        function switchTab(tab) {
+            document.getElementById('view-shop').classList.add('hidden');
+            document.getElementById('view-lookup').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.getElementById('tab-shop').className = "flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+            document.getElementById('tab-lookup').className = "flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+            document.getElementById('tab-admin').className = "flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+
+            if (tab === 'shop') {
+                document.getElementById('view-shop').classList.remove('hidden');
+                document.getElementById('tab-shop').className = "flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all bg-white text-emerald-700 shadow-sm";
+            } else if (tab === 'lookup') {
+                document.getElementById('view-lookup').classList.remove('hidden');
+                document.getElementById('tab-lookup').className = "flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all bg-white text-emerald-700 shadow-sm";
+            } else if (tab === 'admin') {
+                document.getElementById('view-admin').classList.remove('hidden');
+                document.getElementById('tab-admin').className = "flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all bg-white text-emerald-700 shadow-sm";
+                renderAdminOrders();
+                updateAdminStats();
+            }
+        }
+
+        // Admin Access Guard & Password Verification
+        function requestAdminAccess() {
+            if (isAdminAuthenticated) {
+                switchTab('admin');
+            } else {
+                document.getElementById('admin-auth-input').value = '';
+                document.getElementById('admin-auth-error').classList.add('hidden');
+                document.getElementById('admin-auth-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeAdminAuthModal() {
+            document.getElementById('admin-auth-modal').classList.add('hidden');
+        }
+
+        function handleAdminAuthSubmit(e) {
+            e.preventDefault();
+            const inputPw = document.getElementById('admin-auth-input').value.trim();
+            if (inputPw === 'admin1234') {
+                isAdminAuthenticated = true;
+                closeAdminAuthModal();
+                switchTab('admin');
+                showToast("관리자 인증에 성공하였습니다.");
+            } else {
+                document.getElementById('admin-auth-error').classList.remove('hidden');
+            }
+        }
+
+        // Render Product Catalog Cards
+        function renderShopProducts() {
+            const container = document.getElementById('product-grid');
+            const searchVal = document.getElementById('shop-search').value.toLowerCase().trim();
+
+            let filtered = productsData.filter(p => {
+                const matchesCat = currentShopCategory === 'all' || p.category === currentShopCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchVal) || p.desc.toLowerCase().includes(searchVal);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass text-3xl mb-2 text-slate-300"></i>
+                        <p>검색된 상품이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <div class="w-full h-28 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-3">
+                            <i class="fa-solid ${p.icon} text-4xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">${getCatName(p.category)}</span>
+                        <h3 class="font-bold text-slate-900 text-xs sm:text-sm mt-1.5 line-clamp-1">${p.name}</h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">${p.desc}</p>
+                    </div>
+                    <div class="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <span class="font-black text-slate-900 text-sm sm:text-base">${p.price.toLocaleString()}원</span>
+                        <button onclick="addToCart(${p.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center space-x-1">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>담기</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCatName(cat) {
+            switch(cat) {
+                case 'fresh': return '과일/야채';
+                case 'meat': return '정육/수산';
+                case 'instant': return '공산품';
+                case 'snack': return '간식';
+                default: return '상품';
+            }
+        }
+
+        function filterCategory(cat) {
+            currentShopCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition whitespace-nowrap";
+            });
+            event.target.className = "cat-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition whitespace-nowrap";
+            renderShopProducts();
+        }
+
+        // Cart Actions
+        function addToCart(productId) {
+            const product = productsData.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.count += 1;
+            } else {
+                cart.push({ ...product, count: 1 });
+            }
+            renderCart();
+            showToast(`${product.name}이(가) 장바구니에 담겼습니다.`);
+        }
+
+        function updateCartQty(productId, delta) {
+            const idx = cart.findIndex(item => item.id === productId);
+            if (idx > -1) {
+                cart[idx].count += delta;
+                if (cart[idx].count <= 0) {
+                    cart.splice(idx, 1);
+                }
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            const subtotalEl = document.getElementById('cart-subtotal');
+            const totalEl = document.getElementById('cart-total');
+            const submitBtn = document.getElementById('btn-submit-order');
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-slate-400 text-xs">
+                        <i class="fa-solid fa-basket-shopping text-2xl mb-1 text-slate-300"></i>
+                        <p>장바구니가 비어 있습니다.</p>
+                    </div>
+                `;
+                subtotalEl.innerText = "0원";
+                totalEl.innerText = "0원";
+                submitBtn.disabled = true;
+                submitBtn.className = "w-full py-3 bg-slate-300 text-white font-bold rounded-xl text-xs transition-all shadow-none cursor-not-allowed";
+                return;
+            }
+
+            let subtotal = 0;
+            container.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.count;
+                subtotal += itemTotal;
+                return `
+                    <div class="flex items-center justify-between py-1.5">
+                        <div class="flex-1 pr-2">
+                            <h4 class="text-xs font-bold text-slate-800 line-clamp-1">${item.name}</h4>
+                            <p class="text-[11px] text-emerald-600 font-semibold">${itemTotal.toLocaleString()}원</p>
+                        </div>
+                        <div class="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+                            <button type="button" onclick="updateCartQty(${item.id}, -1)" class="px-2 py-0.5 text-slate-500 hover:bg-slate-200 text-xs font-bold">-</button>
+                            <span class="px-2 text-xs font-bold text-slate-700">${item.count}</span>
+                            <button type="button" onclick="updateCartQty(${item.id}, 1)" class="px-2 py-0.5 text-slate-500 hover:bg-slate-200 text-xs font-bold">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            subtotalEl.innerText = subtotal.toLocaleString() + '원';
+            totalEl.innerText = subtotal.toLocaleString() + '원';
+
+            submitBtn.disabled = false;
+            submitBtn.className = "w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-md cursor-pointer";
+        }
+
+        // Checkout Process
+        function handleCheckoutSubmit(e) {
+            e.preventDefault();
+            if (cart.length === 0) return;
+
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.replace(/[^0-9]/g, '');
+            const password = document.getElementById('cust-password').value.trim();
+            const pickupTime = document.getElementById('cust-pickup-time').value;
+            const payMethod = document.getElementById('cust-payment-method').value;
+            const notes = document.getElementById('cust-notes').value.trim() || '없음';
+
+            if (phone.length < 10) {
+                alert('올바른 휴대폰 번호(숫자 10~11자리)를 입력해주세요.');
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.count), 0);
+
+            pendingCheckoutData = {
+                id: 'M-' + Math.floor(1000 + Math.random() * 9000),
+                time: new Date().toLocaleString('ko-KR'),
+                customer: { name, phone, password, pickupTime, notes },
+                items: cart.map(i => ({ name: i.name, price: i.price, count: i.count })),
+                subtotal,
+                shipping: 0,
+                totalAmount: subtotal,
+                payMethodType: payMethod
+            };
+
+            if (payMethod === 'onsite') {
+                confirmOnsitePayment();
+            } else {
+                openPaymentSimModal(payMethod, subtotal);
+            }
+        }
+
+        function confirmOnsitePayment() {
+            const finalOrder = {
+                ...pendingCheckoutData,
+                paymentMethod: "매장 현장 결제 (픽업시 수령)",
+                status: "접수"
+            };
+
+            orders.unshift(finalOrder);
+            saveOrdersToStorage();
+
+            document.getElementById('modal-order-id').innerText = finalOrder.id;
+            document.getElementById('modal-order-pay').innerText = finalOrder.paymentMethod;
+            document.getElementById('modal-order-price').innerText = finalOrder.totalAmount.toLocaleString() + '원';
+            document.getElementById('success-modal').classList.remove('hidden');
+
+            document.getElementById('checkout-form').reset();
+            cart = [];
+            renderCart();
+            pendingCheckoutData = null;
+
+            updateAdminStats();
+            showToast("현장결제 픽업 주문이 성공적으로 접수되었습니다.");
+        }
+
+        function openPaymentSimModal(type, amount) {
+            const headerEl = document.getElementById('pay-sim-header');
+            const bodyEl = document.getElementById('pay-sim-body');
+
+            if (type === 'card') {
+                headerEl.innerHTML = `
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-credit-card"></i></div>
+                    <h3 class="text-base font-bold text-slate-900">신용/체크카드 결제 모의 승인</h3>
+                `;
+                bodyEl.innerHTML = `
+                    <div class="flex justify-between font-bold border-b border-slate-200 pb-2">
+                        <span>결제 금액</span>
+                        <span class="text-emerald-600">${amount.toLocaleString()}원</span>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">카드번호 (모의 입력)</label>
+                        <input type="text" placeholder="1234-5678-9012-3456" value="4330-****-****-1234" readonly class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-100 font-mono text-slate-700">
+                    </div>
+                `;
+            } else {
+                headerEl.innerHTML = `
+                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-mobile-screen"></i></div>
+                    <h3 class="text-base font-bold text-slate-900">간편결제 (카카오/네이버/토스) 모의</h3>
+                `;
+                bodyEl.innerHTML = `
+                    <div class="flex justify-between font-bold border-b border-slate-200 pb-2">
+                        <span>결제 금액</span>
+                        <span class="text-emerald-600">${amount.toLocaleString()}원</span>
+                    </div>
+                    <p class="text-slate-500">스마트폰 앱 인증을 통한 빠른 간편결제가 진행됩니다.</p>
+                `;
+            }
+
+            document.getElementById('payment-sim-modal').classList.remove('hidden');
+        }
+
+        function confirmPaymentSim() {
+            if (!pendingCheckoutData) return;
+
+            const methodNames = {
+                card: "신용/체크카드 (온라인 승인)",
+                easy: "간편결제 (카카오/네이버/토스)",
+                onsite: "매장 현장 결제"
+            };
+
+            const finalOrder = {
+                ...pendingCheckoutData,
+                paymentMethod: methodNames[pendingCheckoutData.payMethodType] || "카드결제",
+                status: "접수"
+            };
+
+            orders.unshift(finalOrder);
+            saveOrdersToStorage();
+
+            document.getElementById('payment-sim-modal').classList.add('hidden');
+
+            document.getElementById('modal-order-id').innerText = finalOrder.id;
+            document.getElementById('modal-order-pay').innerText = finalOrder.paymentMethod;
+            document.getElementById('modal-order-price').innerText = finalOrder.totalAmount.toLocaleString() + '원';
+            document.getElementById('success-modal').classList.remove('hidden');
+
+            document.getElementById('checkout-form').reset();
+            cart = [];
+            renderCart();
+            pendingCheckoutData = null;
+
+            updateAdminStats();
+            showToast("픽업 주문이 성공적으로 완료되었습니다.");
+        }
+
+        function cancelPaymentSim() {
+            document.getElementById('payment-sim-modal').classList.add('hidden');
+            pendingCheckoutData = null;
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+        }
+
+        function openPaymentGuideModal() {
+            document.getElementById('payment-guide-modal').classList.remove('hidden');
+        }
+
+        function closePaymentGuideModal() {
+            document.getElementById('payment-guide-modal').classList.add('hidden');
+        }
+
+        // Customer Order Lookup Logic
+        function handleLookupOrder(e) {
+            e.preventDefault();
+            const phone = document.getElementById('lookup-phone').value.replace(/[^0-9]/g, '');
+            const password = document.getElementById('lookup-password').value.trim();
+            const errorMsg = document.getElementById('lookup-error-msg');
+            const container = document.getElementById('lookup-results-container');
+            const listEl = document.getElementById('lookup-results-list');
+            const countEl = document.getElementById('lookup-count');
+
+            const matched = orders.filter(o => 
+                o.customer.phone === phone && o.customer.password === password
+            );
+
+            if (matched.length === 0) {
+                errorMsg.classList.remove('hidden');
+                container.classList.add('hidden');
+                return;
+            }
+
+            errorMsg.classList.add('hidden');
+            container.classList.remove('hidden');
+            countEl.innerText = matched.length;
+
+            listEl.innerHTML = matched.map(order => `
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-3 gap-2">
+                        <div>
+                            <span class="font-extrabold text-slate-900 text-sm">${order.id}</span>
+                            <span class="text-xs text-slate-400 ml-2">${order.time}</span>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${getStatusBadgeStyle(order.status)}">
+                            ${order.status}
+                        </span>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <h4 class="text-xs font-bold text-slate-500">주문 상품 목록</h4>
+                        ${order.items.map(i => `
+                            <div class="flex justify-between text-xs text-slate-700 bg-slate-50 p-2 rounded-lg">
+                                <span>${i.name} (${i.count}개)</span>
+                                <span class="font-bold">${(i.price * i.count).toLocaleString()}원</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl">
+                        <div>
+                            <span class="text-slate-400 block">픽업 희망시간</span>
+                            <span class="font-bold text-emerald-700">${order.customer.pickupTime}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">결제 방식</span>
+                            <span class="font-medium text-slate-800">${order.paymentMethod}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-sm font-bold text-slate-900 pt-1">
+                        <span>총 결제금액</span>
+                        <span class="text-emerald-600">${order.totalAmount.toLocaleString()}원</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Admin Order Pipeline Rendering
+        function renderAdminOrders() {
+            const container = document.getElementById('admin-orders-container');
+            const searchVal = document.getElementById('admin-search').value.toLowerCase().trim();
+
+            let list = [...orders];
+
+            if (currentAdminFilter !== 'all') {
+                list = list.filter(o => o.status === currentAdminFilter);
+            }
+
+            if (searchVal) {
+                list = list.filter(o => 
+                    o.customer.name.toLowerCase().includes(searchVal) ||
+                    o.customer.phone.includes(searchVal) ||
+                    o.id.toLowerCase().includes(searchVal) ||
+                    o.items.some(i => i.name.toLowerCase().includes(searchVal))
+                );
+            }
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs">
+                        <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300"></i>
+                        <p>해당 조건의 픽업 주문 내역이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(order => `
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-3 p-5">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-3 gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black text-slate-900 text-sm">${order.id}</span>
+                            <span class="text-xs text-slate-400">${order.time}</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusBadgeStyle(order.status)}">
+                                ${order.status}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-1.5">
+                            ${getAdminActionButtons(order.id, order.status)}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="md:col-span-2 space-y-1.5">
+                            <span class="text-slate-400 font-bold block">주문 상품</span>
+                            ${order.items.map(i => `
+                                <div class="flex justify-between bg-slate-50 p-2 rounded-lg text-slate-700">
+                                    <span>${i.name}</span>
+                                    <span class="font-bold">${i.count}개 / ${(i.price * i.count).toLocaleString()}원</span>
+                                </div>
+                            `).join('')}
+                            <div class="text-right font-bold text-slate-900 pt-1">
+                                총 결제액: <span class="text-emerald-600">${order.totalAmount.toLocaleString()}원</span> (${order.paymentMethod})
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-3 rounded-xl space-y-1 text-slate-600">
+                            <span class="text-slate-400 font-bold block mb-1">픽업 및 고객 정보</span>
+                            <p class="font-bold text-slate-800">${order.customer.name} <span class="font-mono text-slate-500">(${order.customer.phone})</span></p>
+                            <p class="text-emerald-700 font-bold"><i class="fa-regular fa-clock mr-1"></i>희망시간: ${order.customer.pickupTime}</p>
+                            <p class="text-slate-500 italic">요청: ${order.customer.notes}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterAdminStatus(status) {
+            currentAdminFilter = status;
+            document.querySelectorAll('.admin-status-btn').forEach(btn => {
+                btn.className = "admin-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition";
+            });
+            event.target.className = "admin-status-btn active px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white transition";
+            renderAdminOrders();
+        }
+
+        function changeOrderStatus(orderId, newStatus) {
+            const target = orders.find(o => o.id === orderId);
+            if (target) {
+                target.status = newStatus;
+                saveOrdersToStorage();
+                renderAdminOrders();
+                updateAdminStats();
+                showToast(`주문 ${orderId}의 상태가 '${newStatus}'(으)로 변경되었습니다.`);
+            }
+        }
+
+        function getAdminActionButtons(orderId, status) {
+            if (status === '접수') {
+                return `
+                    <button onclick="changeOrderStatus('${orderId}', '상품 선별중')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition">
+                        선별 시작
+                    </button>
+                    <button onclick="changeOrderStatus('${orderId}', '취소')" class="px-2.5 py-1 bg-slate-200 hover:bg-red-500 hover:text-white text-xs font-semibold rounded-lg transition">
+                        취소
+                    </button>
+                `;
+            } else if (status === '상품 선별중') {
+                return `
+                    <button onclick="changeOrderStatus('${orderId}', '픽업 대기')" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition">
+                        픽업 대기 설정
+                    </button>
+                `;
+            } else if (status === '픽업 대기') {
+                return `
+                    <button onclick="changeOrderStatus('${orderId}', '픽업 완료')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition">
+                        수령 완료
+                    </button>
+                `;
+            } else {
+                return `<span class="text-slate-400 text-xs">상태 변경 불가</span>`;
+            }
+        }
+
+        function updateAdminStats() {
+            const total = orders.length;
+            const received = orders.filter(o => o.status === '접수').length;
+            const preparing = orders.filter(o => o.status === '상품 선별중').length;
+            const shipping = orders.filter(o => o.status === '픽업 대기').length;
+            const revenue = orders.filter(o => o.status !== '취소').reduce((sum, o) => sum + o.totalAmount, 0);
+
+            document.getElementById('admin-stat-total').innerText = total;
+            document.getElementById('admin-stat-received').innerText = received;
+            document.getElementById('admin-stat-preparing').innerText = preparing;
+            document.getElementById('admin-stat-shipping').innerText = shipping;
+            document.getElementById('admin-stat-revenue').innerText = revenue.toLocaleString() + '원';
+
+            const badge = document.getElementById('badge-pending-count');
+            if (received > 0) {
+                badge.innerText = received;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function getStatusBadgeStyle(status) {
+            switch (status) {
+                case '접수': return 'bg-blue-100 text-blue-700 border border-blue-200';
+                case '상품 선별중': return 'bg-amber-100 text-amber-800 border border-amber-200';
+                case '픽업 대기': return 'bg-purple-100 text-purple-700 border border-purple-200';
+                case '픽업 완료': return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+                case '취소': return 'bg-slate-100 text-slate-500 border border-slate-200';
+                default: return 'bg-slate-100 text-slate-700';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
